@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+require 'bundler'
+
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path('./Gemfile')
+Bundler.require(:default, :development)
+
+Dotenv.load
+
+require_relative '../lib/bot'
+
+pry
