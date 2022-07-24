@@ -15,6 +15,6 @@ IEX_SECRET_TOKEN= # secret token for iex cloud
 
 Then run it:
 
-```shell
+```console
 rob@local$ ruby run.rb
 ```
