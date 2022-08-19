@@ -66,7 +66,7 @@ bot.command :stonk, aliases: [:stonks], description: 'get some stonks for ticker
       else
         pos = q.change_percent.positive?
         emoji = pos ? '📈' : '📉'
-        event.send "**#{q.symbol}** is #{pos ? '' : 'not '}stonks #{emoji} `#{q.latest_price} (#{q.change_percent_s})`"
+        event.send "**#{q.symbol}** is #{pos ? '' : 'not '}stonks #{emoji} `$#{q.latest_price} (#{q.change_percent_s})`"
       end
     end
   rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
