@@ -51,22 +51,29 @@ bot.command :ghstat, description: 'reports github status' do |event|
 end
 
 bot.command :stonk, aliases: [:stonks], description: 'get some stonks for tickers' do |event, *args|
-  meta = nil
+  is_raw = false
   args.each do |arg|
-    if arg == '--meta'
-      meta ||= bot.iex_meta.slice('creditsUsed', 'creditLimit', 'circuitBreaker')
-      next
+    case arg
+    when '--meta'
+      meta = bot.iex_meta.slice('creditsUsed', 'creditLimit', 'circuitBreaker')
+      event.send "```#{JSON.pretty_generate(meta)}```"
+    when '--raw'
+      is_raw = true
+    else
+      q = bot.iex.quote(arg)
+      if is_raw
+        event.send "```#{JSON.pretty_generate(q)}```"
+      else
+        pos = q.change_percent.positive?
+        emoji = pos ? '📈' : '📉'
+        event.send "**#{q.symbol}** is #{pos ? '' : 'not '}stonks #{emoji} `#{q.latest_price} (#{q.change_percent_s})`"
+      end
     end
-
-    q = bot.iex.quote(arg)
-    pos = q.change_percent.positive?
-    emoji = pos ? '📈' : '📉'
-    event.send "**#{q.symbol}** is #{pos ? '' : 'not '}stonks #{emoji} `#{q.latest_price} (#{q.change_percent_s})`"
   rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
     event.send 'no stonks found'
   end
 
-  "```#{meta}```" if meta
+  nil
 end
 
 bot.command :http, description: 'describe http status code' do |event, *args|
