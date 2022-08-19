@@ -109,5 +109,6 @@ bot.react on: %w[mc minecraft craft], with: %w[⛏ 💎 ⚔️]
 bot.react on: %w[nert nertz nerts], with: %w[❤️ 🃏]
 bot.react on: 'raft', with: %w[🚣 🪵 🎣 🦈]
 bot.react on: 'ibm', with: %w[👁️ 🐝 Ⓜ️]
+bot.react on: %w[github gh hub], with: %w[🐙 💾 🧑‍💻]
 
 bot.run
