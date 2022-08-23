@@ -32,7 +32,7 @@ module Rebbot
       end
 
       def stonk_method(method, _extended)
-        method.to_s.gsub(/^(latest_|)/, 'extended_')
+        method.to_s.gsub(/^(latest_|)/, 'extended_').to_sym
       end
     end
   end
