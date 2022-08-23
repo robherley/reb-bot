@@ -64,9 +64,9 @@ bot.command :stonk, aliases: [:stonks], description: 'get some stonks for ticker
       if is_raw
         event.send "```#{JSON.pretty_generate(q)}```"
       else
-        pos = q.change_percent.positive?
-        emoji = pos ? '📈' : '📉'
-        event.send "**#{q.symbol}** is #{pos ? '' : 'not '}stonks #{emoji} `$#{q.latest_price} (#{q.change_percent_s})`"
+        msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
+        msg += " after nap: #{bot.stonk_data(q, extended: true)}" if q.extended_price_time > q.iex_last_updated
+        event.send msg
       end
     end
   rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
