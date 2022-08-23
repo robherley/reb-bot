@@ -65,7 +65,7 @@ bot.command :stonk, aliases: [:stonks], description: 'get some stonks for ticker
         event.send "```#{JSON.pretty_generate(q)}```"
       else
         msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
-        msg += " after nap: #{bot.stonk_data(q, extended: true)}" if q.extended_price_time > q.iex_last_updated
+        msg += " after nap: #{bot.stonk_data(q, extended: true)}" if q.extended_price_time > (q.iex_last_updated || 0)
         event.send msg
       end
     end
