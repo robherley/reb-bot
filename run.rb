@@ -52,6 +52,7 @@ end
 
 bot.command :stonk, aliases: [:stonks], description: 'get some stonks for tickers' do |event, *args|
   is_raw = false
+  is_stats = false
   args.each do |arg|
     case arg
     when '--meta'
@@ -59,20 +60,23 @@ bot.command :stonk, aliases: [:stonks], description: 'get some stonks for ticker
       event.send "```#{JSON.pretty_generate(meta)}```"
     when '--raw'
       is_raw = true
+    when '--stats'
+      is_stats = true
     else
-      q = bot.iex.quote(arg)
-      if is_raw
-        event.send "```#{JSON.pretty_generate(q)}```"
+      if is_stats
+        stats = bot.iex.key_stats(arg)
+        event.send bot.stonk_stats(stats, is_raw: is_raw)
       else
+        q = bot.iex.quote(arg)
+        return event.send "```#{JSON.pretty_generate(q)}```" if is_raw == true
         msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
-        msg += " after nap: #{bot.stonk_data(q, extended: true)}" if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
+        msg += " after hours: #{bot.stonk_data(q, extended: true)}" if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
         event.send msg
       end
     end
   rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
     event.send 'no stonks found'
   end
-
   nil
 end
 

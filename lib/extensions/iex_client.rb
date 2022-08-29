@@ -17,11 +17,29 @@ module Rebbot
 
       def stonk_data(stonk, extended: false)
         pos = stonk.send(stonk_method(:change_percent, extended))&.positive?
-        emoji = pos ? '📈' : '📉'
+        emoji = stonks_emoji(pos)
         "is #{pos ? '' : 'not '}stonks #{emoji} `$#{stonk.send(stonk_method(:latest_price, extended))} (#{stonk.send(stonk_method(:change_percent_s, extended))})`"
       end
 
+      def stonk_stats(stats, is_raw: false)
+        return "```#{JSON.pretty_generate(stats)}```" if is_raw == true
+
+        employees = "🧑 **Employees**: `#{stats['employees']}`"
+        market_cap = "💰 **Market Cap**: `#{stats['market_cap_dollar']}`"
+        next_earnings = "🗓️ **Earnings Date**: `#{stats['next_earnings_date']}`"
+
+        pos = stats['ytd_change_percent']&.positive?
+        emoji = stonks_emoji(pos)
+        ytd = "#{emoji} **YTD**: `#{stats['ytd_change_percent_s']}`"
+
+        "#{employees}\n#{market_cap}\n#{next_earnings}\n#{ytd}"
+      end
+
       private
+
+      def stonks_emoji(pos)
+        pos ? '📈' : '📉'
+      end
 
       def build_client
         @iex_client = IEX::Api::Client.new(
