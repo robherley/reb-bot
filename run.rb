@@ -69,8 +69,12 @@ bot.command :stonk, aliases: [:stonks], description: 'get some stonks for ticker
       else
         q = bot.iex.quote(arg)
         return event.send "```#{JSON.pretty_generate(q)}```" if is_raw == true
+
         msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
-        msg += " after hours: #{bot.stonk_data(q, extended: true)}" if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
+        if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
+          msg += " after hours: #{bot.stonk_data(q,
+                                                 extended: true)}"
+        end
         event.send msg
       end
     end
@@ -95,6 +99,42 @@ bot.command :http, description: 'describe http status code' do |event, *args|
       event.send '🤷 🐈'
     end
   ensure
+    tmp.close
+    tmp.unlink
+  end
+end
+
+bot.command :draw, description: 'run stable diffusion on a prompt' do |event, *args|
+  next unless args.first
+
+  prompt = args.join(' ')
+
+  data = {
+    fn_index: 11,
+    data: [prompt, '', 'None', 'None', 20, 'Euler a', false, false, 1, 1, 7, -1, -1, 0, 0, 0, false, 512, 512,
+           false, false, 0.7, 'None', false, nil, '', false, 'Seed', '', 'Steps', '', true, false, nil, '', '']
+  }
+
+  tmp = Tempfile.new('diffusion')
+  begin
+    conn = Faraday.new(
+      url: 'http://m1.lab.reb.gg:7860',
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    event.send "🎨 Drawing '#{prompt}' ⌛"
+    response = conn.post('/api/predict/') do |req|
+      req.body = data.to_json
+    end
+
+    json = JSON.parse(response.body)
+    b64 = json['data'].first.first.split('base64,').last
+    tmp.write(Base64.decode64(b64))
+    tmp.rewind
+    event.send_file(tmp, filename: 'drawing.png')
+    # TODO: catch bad
+  ensure
+    # msg.delete
     tmp.close
     tmp.unlink
   end
