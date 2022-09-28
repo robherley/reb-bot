@@ -9,4 +9,13 @@ Dotenv.load
 
 require_relative '../lib/bot'
 
+bot = Rebbot::Bot.new(
+  discord_token: ENV['DISCORD_TOKEN'],
+  cmd_prefix: ENV['PREFIX'] || '!',
+  iex_tokens: {
+    public: ENV['IEX_PUB_TOKEN'],
+    secret: ENV['IEX_SECRET_TOKEN']
+  }
+)
+
 pry

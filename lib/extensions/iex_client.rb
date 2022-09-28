@@ -12,7 +12,7 @@ module Rebbot
       end
 
       def iex_meta
-        iex.get('/account/metadata', token: @iex_tokens[:secret])
+        iex.get('/account/metadata', token: iex.secret_token)
       end
 
       def stonk_data(stonk, extended: false)
@@ -43,8 +43,8 @@ module Rebbot
 
       def build_client
         @iex_client = IEX::Api::Client.new(
-          publishable_token: @iex_tokens[:public],
-          secret_token: @iex_tokens[:secret],
+          publishable_token: @options[:iex_tokens][:public],
+          secret_token: @options[:iex_tokens][:secret],
           endpoint: 'https://cloud.iexapis.com/v1'
         )
       end

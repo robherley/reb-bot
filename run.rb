@@ -5,6 +5,7 @@ require 'artii'
 require 'ruby_cowsay'
 require 'json'
 require 'faraday'
+require 'pry'
 
 require_relative './lib/bot'
 
@@ -17,102 +18,108 @@ bot = Rebbot::Bot.new(
   }
 )
 
-bot.command :ping, description: 'test if reb-bot is online' do |event|
-  "🏓 pong!\n`[user='#{event.user.name}', channel='#{event.channel.name}', server='#{event.channel.server.name}']`"
-end
+# bot.command :t do |event|
+#   binding.pry
 
-bot.command :fig, description: 'runs figlet on text' do |_event, *args|
-  "```\n#{Artii::Base.new.asciify args.join(' ')[0..20]}```"
-end
+#   "ok"
+# end
 
-bot.command :cow, description: 'cowsay something' do |_event, *args|
-  "```\n#{Cow.new.say args.join(' ')[0..20]}```"
-end
+# bot.command :ping, description: 'test if reb-bot is online' do |event|
+#   "🏓 pong!\n`[user='#{event.user.name}', channel='#{event.channel.name}', server='#{event.channel.server.name}']`"
+# end
 
-bot.command :ghstat, description: 'reports github status' do |event|
-  response = Faraday.get('https://www.githubstatus.com/api/v2/summary.json')
-  json = JSON.parse(response.body)
+# bot.command :fig, description: 'runs figlet on text' do |_event, *args|
+#   "```\n#{Artii::Base.new.asciify args.join(' ')[0..20]}```"
+# end
 
-  emoji = {
-    'operational' => '🟢',
-    'degraded_performance' => '🟡',
-    'partial_outage' => '🟡',
-    'major_outage' => '🔴'
-  }
+# bot.command :cow, description: 'cowsay something' do |_event, *args|
+#   "```\n#{Cow.new.say args.join(' ')[0..20]}```"
+# end
 
-  event.send ":octopus:  **GitHub Status**: #{json['status']['description']}"
+# bot.command :ghstat, description: 'reports github status' do |event|
+#   response = Faraday.get('https://www.githubstatus.com/api/v2/summary.json')
+#   json = JSON.parse(response.body)
 
-  json['components'].map do |component|
-    # metadata component to ignore
-    next if component['id'] == '0l2p9nhqnxpd'
+#   emoji = {
+#     'operational' => '🟢',
+#     'degraded_performance' => '🟡',
+#     'partial_outage' => '🟡',
+#     'major_outage' => '🔴'
+#   }
 
-    "#{emoji[component['status']] || '❓'} **#{component['name']}**: #{component['description'] || '*<no description>*'}"
-  end.compact.sort.join("\n")
-end
+#   event.send ":octopus:  **GitHub Status**: #{json['status']['description']}"
 
-bot.command :stonk, aliases: [:stonks], description: 'get some stonks for tickers' do |event, *args|
-  is_raw = false
-  is_stats = false
-  args.each do |arg|
-    case arg
-    when '--meta'
-      meta = bot.iex_meta.slice('creditsUsed', 'creditLimit', 'circuitBreaker')
-      event.send "```#{JSON.pretty_generate(meta)}```"
-    when '--raw'
-      is_raw = true
-    when '--stats'
-      is_stats = true
-    else
-      if is_stats
-        stats = bot.iex.key_stats(arg)
-        event.send bot.stonk_stats(stats, is_raw: is_raw)
-      else
-        q = bot.iex.quote(arg)
-        return event.send "```#{JSON.pretty_generate(q)}```" if is_raw == true
-        msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
-        msg += " after hours: #{bot.stonk_data(q, extended: true)}" if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
-        event.send msg
-      end
-    end
-  rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
-    event.send 'no stonks found'
-  end
-  nil
-end
+#   json['components'].map do |component|
+#     # metadata component to ignore
+#     next if component['id'] == '0l2p9nhqnxpd'
 
-bot.command :http, description: 'describe http status code' do |event, *args|
-  next unless args.first
+#     "#{emoji[component['status']] || '❓'} **#{component['name']}**: #{component['description'] || '*<no description>*'}"
+#   end.compact.sort.join("\n")
+# end
 
-  tmp = Tempfile.new('httpcat')
-  begin
-    response = Faraday.get("https://http.cat/#{args.first[0..2]}")
+# bot.command :stonk, aliases: [:stonks], description: 'get some stonks for tickers' do |event, *args|
+#   is_raw = false
+#   is_stats = false
+#   args.each do |arg|
+#     case arg
+#     when '--meta'
+#       meta = bot.iex_meta.slice('creditsUsed', 'creditLimit', 'circuitBreaker')
+#       event.send "```#{JSON.pretty_generate(meta)}```"
+#     when '--raw'
+#       is_raw = true
+#     when '--stats'
+#       is_stats = true
+#     else
+#       if is_stats
+#         stats = bot.iex.key_stats(arg)
+#         event.send bot.stonk_stats(stats, is_raw: is_raw)
+#       else
+#         q = bot.iex.quote(arg)
+#         return event.send "```#{JSON.pretty_generate(q)}```" if is_raw == true
+#         msg = "**#{q.symbol}** #{bot.stonk_data(q)}"
+#         msg += " after hours: #{bot.stonk_data(q, extended: true)}" if (q.extended_price_time || 0) > (q.iex_last_updated || 0)
+#         event.send msg
+#       end
+#     end
+#   rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
+#     event.send 'no stonks found'
+#   end
+#   nil
+# end
 
-    if response.headers['content-type'] == 'image/jpeg'
-      tmp.write(response.body)
-      tmp.rewind
-      event.send_file(tmp, filename: 'httpcat.jpg')
-    else
-      event.send '🤷 🐈'
-    end
-  ensure
-    tmp.close
-    tmp.unlink
-  end
-end
+# bot.command :http, description: 'describe http status code' do |event, *args|
+#   next unless args.first
 
-bot.minecraft :mc, host: 'mc.reb.gg'
+#   tmp = Tempfile.new('httpcat')
+#   begin
+#     response = Faraday.get("https://http.cat/#{args.first[0..2]}")
 
-bot.react on: %w[reb-bot reb bot], with: %w[🤖 🔥 😈]
-bot.react on: 'moon', with: %w[🚀 🌙]
-bot.react on: 'lumos', with: %w[🐈 ❤️]
-bot.react on: 'nox', with: %w[🐈‍⬛ ❤️]
-bot.react on: 'moon', with: %w[🚀 🌙]
-bot.react on: 'rust', with: %w[🦀]
-bot.react on: 'game', with: %w[🕹️ ✨ 🃏]
-bot.react on: %w[mc minecraft craft], with: %w[⛏ 💎 ⚔️]
-bot.react on: %w[nert nertz nerts], with: %w[❤️ 🃏]
-bot.react on: 'raft', with: %w[🚣 🪵 🎣 🦈]
-bot.react on: 'ibm', with: %w[👁️ 🐝 Ⓜ️]
-bot.react on: %w[github gh hub], with: %w[🐙 💾 🧑‍💻]
+#     if response.headers['content-type'] == 'image/jpeg'
+#       tmp.write(response.body)
+#       tmp.rewind
+#       event.send_file(tmp, filename: 'httpcat.jpg')
+#     else
+#       event.send '🤷 🐈'
+#     end
+#   ensure
+#     tmp.close
+#     tmp.unlink
+#   end
+# end
+
+# bot.minecraft :mc, host: 'mc.reb.gg'
+
+# bot.react on: %w[reb-bot reb bot], with: %w[🤖 🔥 😈]
+# bot.react on: 'moon', with: %w[🚀 🌙]
+# bot.react on: 'lumos', with: %w[🐈 ❤️]
+# bot.react on: 'nox', with: %w[🐈‍⬛ ❤️]
+# bot.react on: 'moon', with: %w[🚀 🌙]
+# bot.react on: 'rust', with: %w[🦀]
+# bot.react on: 'game', with: %w[🕹️ ✨ 🃏]
+# bot.react on: %w[mc minecraft craft], with: %w[⛏ 💎 ⚔️]
+# bot.react on: %w[nert nertz nerts], with: %w[❤️ 🃏]
+# bot.react on: 'raft', with: %w[🚣 🪵 🎣 🦈]
+# bot.react on: 'ibm', with: %w[👁️ 🐝 Ⓜ️]
+# bot.react on: %w[github gh hub], with: %w[🐙 💾 🧑‍💻]
 
 bot.run
