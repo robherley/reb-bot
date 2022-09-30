@@ -2,8 +2,6 @@
 
 require_relative './constants'
 
-Dir[File.expand_path('./extensions/*.rb', __dir__)].sort.each { |file| require file }
-Dir[File.expand_path('./events/*.rb', __dir__)].sort.each { |file| require file }
 Dir[File.expand_path('./commands/*.rb', __dir__)].sort.each { |file| require file }
 
 module Rebbot

@@ -12,7 +12,7 @@ module Rebbot
 
       def with_options(cmd)
         cmd.integer('code', 'status code', required: true)
-        cmd.string('animal', 'what animal?', choices: self.ANIMALS.map { |a| [a, a] })
+        cmd.string('animal', 'what animal?', choices: ANIMALS.map { |a| [a, a] })
       end
 
       def on_event(event)
