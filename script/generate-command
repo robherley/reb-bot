@@ -12,13 +12,17 @@ unless options[:name]
   exit 1
 end
 
+downname = options[:name].downcase
+classname = downname.split('-').map(&:capitalize).join('')
+symbolname = downname.include?('-') ? "'#{downname}'" : downname
+
 template = <<~RUBY
   # frozen_string_literal: true
 
   module Rebbot
     module Commands
-      class #{options[:name].capitalize} < Rebbot::Commands::Base
-        on :#{options[:name].downcase}, description: 'describe your command here'
+      class #{classname} < Rebbot::Commands::Base
+        on :#{symbolname}, description: 'description for the #{downname} command'
 
         # (optional) Define any shared clients/variables/etc here, or delete it
         def initialize
@@ -51,7 +55,7 @@ template = <<~RUBY
   end
 RUBY
 
-filepath = File.expand_path(File.join(__dir__, '..', 'lib', 'commands', "#{options[:name].downcase}.rb"))
+filepath = File.expand_path(File.join(__dir__, '..', 'lib', 'commands', "#{downname}.rb"))
 if File.file?(filepath)
   warn "file already exists: #{filepath}"
   exit 1
