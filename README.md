@@ -24,6 +24,17 @@ Then run:
 rob@local$ script/setup
 ```
 
+## Creating a new command
+
+Use the generator script:
+
+```console
+rob@local$ script/generate-command -n foobar
+command file generated: /workspaces/reb-bot/lib/commands/foobar.rb
+```
+
+And add your changes to the generated file.
+
 ## Registering commands
 
 For bots that use slash commands, they must be [registered with Discord](https://discord.com/developers/docs/interactions/application-commands#registering-a-command). Commands can be registered globally, or to a specific server. During development, it's recommended to register to a specific server since it will update instantly, then register it globally when ready.
