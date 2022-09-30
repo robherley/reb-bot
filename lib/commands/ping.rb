@@ -2,19 +2,19 @@
 
 module Rebbot
   module Commands
-    class Ping
-      def initialize
-        # noop
-      end
+    class Ping < Rebbot::Commands::Base
+      on :ping, description: 'give reb-bot a ping, maybe you will get a pong'
 
-      def register(bot)
-        bot.register_application_command(:ping, 'give reb-bot a ping', server_id: Rebbot::TESTING_SERVER_ID)
-      end
+      def on_event(event)
+        meta = {
+          user: event.user.name,
+          is_admin: event.from_admin?,
+          channel: event.channel.name,
+          server: event.channel.server.name,
+          version: ENV['VERSION'] || 'unknown'
+        }
 
-      def add_handler(bot)
-        bot.application_command(:ping) do |event|
-          event.respond(content: 'PONG')
-        end
+        event.respond(content: "🏓 pong!\n`#{meta}`")
       end
     end
   end
