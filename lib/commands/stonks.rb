@@ -28,6 +28,7 @@ module Rebbot
         is_stats = event.options['stats']
         payload = is_stats ? fetch_stats(ticker) : fetch_stonk(ticker)
 
+        return event.respond(content: "no stonks found for `#{ticker.upcase}`") unless payload
         return event.respond(content: "```json\n#{JSON.pretty_generate(payload)}```") if event.options['raw']
 
         content = is_stats ? build_stats(ticker, payload) : build_stonk(payload)
