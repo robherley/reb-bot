@@ -14,7 +14,7 @@ module Rebbot
           version: ENV['VERSION'] || 'unknown'
         }
 
-        event.respond(content: "🏓 pong!\n`#{meta}`")
+        event.respond(content: "🏓 pong!\n```json\n#{JSON.pretty_generate(meta)}```")
       end
     end
   end
