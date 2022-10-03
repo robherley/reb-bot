@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+options = {}
+OptionParser.new do |opt|
+  opt.on('-n', '--name foobar') { |name| options[:name] = name }
+end.parse!
+
+unless options[:name]
+  warn 'missing "name" argument'
+  exit 1
+end
+
+downname = options[:name].downcase
+classname = downname.split('-').map(&:capitalize).join('')
+symbolname = downname.include?('-') ? "'#{downname}'" : downname
+
+template = <<~RUBY
+  # frozen_string_literal: true
+
+  module Rebbot
+    module Commands
+      class #{classname} < Rebbot::Commands::Base
+        on :#{symbolname}, description: 'description for the #{downname} command'
+
+        # (optional) Define any shared clients/variables/etc here, or delete it
+        def initialize
+          super
+        end
+
+        # (optional) Define any command options
+        # https://github.com/shardlab/discordrb/blob/dc27fe18463da3ccfd0f0266030aa7ad51b2c2b9/lib/discordrb/data/interaction.rb#L415
+        def with_options(cmd)
+          cmd.string('who', 'who to say hello to', required: true)
+        end
+
+        # Define a handler for the command event
+        # https://github.com/shardlab/discordrb/blob/dc27fe18463da3ccfd0f0266030aa7ad51b2c2b9/lib/discordrb/events/interactions.rb#L8
+        def on_event(event)
+          event.respond(content: "hello \#{event.options['who']}!")
+        end
+
+        # Uncomment below if you need to build a lower level event (ie: subcommands) or defining custom controls
+        # https://github.com/shardlab/discordrb/blob/dc27fe18463da3ccfd0f0266030aa7ad51b2c2b9/examples/slash_commands.rb
+        # This will take priority over 'on_event' if both are defined
+        #
+        # def custom(bot)
+        #   bot.application_command(self.class.keyword) do |event|
+        #     # Do something
+        #   end
+        # end
+      end
+    end
+  end
+RUBY
+
+filepath = File.expand_path(File.join(__dir__, '..', 'lib', 'commands', "#{downname}.rb"))
+if File.file?(filepath)
+  warn "file already exists: #{filepath}"
+  exit 1
+end
+
+File.open(filepath, 'w') do |file|
+  file.write(template)
+end
+
+puts "command file generated: #{filepath}"

@@ -3,13 +3,13 @@
 source 'https://rubygems.org'
 
 gem 'artii'
-gem 'discordrb'
+gem 'discordrb', github: 'robherley/discordrb', branch: 'robherley/fix-multipart-webhook-msgs'
+gem 'dotenv'
 gem 'faraday'
 gem 'iex-ruby-client'
 gem 'minestat'
 gem 'ruby_cowsay'
 
 group :development do
-  gem 'dotenv'
   gem 'pry'
 end

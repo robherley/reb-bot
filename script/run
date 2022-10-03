@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+require_relative '../config/env'
+require_relative '../lib/bot'
+
+Rebbot::Bot.new(
+  discord_token: ENV['DISCORD_TOKEN']
+).run

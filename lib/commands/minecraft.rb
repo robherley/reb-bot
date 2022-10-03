@@ -1,35 +1,40 @@
 # frozen_string_literal: true
 
-require 'minestat'
-
 module Rebbot
-  module Extensions
-    module Minecraft
-      def minecraft(keyword, host:, port: nil, bedrock: false)
-        if port.nil?
-          port = bedrock ? MineStat::DEFAULT_BEDROCK_PORT : MineStat::DEFAULT_TCP_PORT
-        end
+  module Commands
+    class Minecraft < Rebbot::Commands::Base
+      on :mc, description: 'check minecraft server status'
 
-        command(keyword, description: "minecraft server status for `#{host}`") do |event|
-          stats = MineStat.new(
-            host,
-            port,
-            2, # timeout in seconds
-            bedrock ? MineStat::Request::BEDROCK : MineStat::Request::JSON
-          )
-          event.send_embed do |embed|
-            build_embed(stats, embed)
-          end
-        end
+      SERVERS = [
+        { host: 'mc.reb.gg', port: 25565, bedrock: false }
+      ].freeze
+
+      def with_options(cmd)
+        cmd.string('server', 'server to ping', choices: SERVERS.map { |s| [s[:host], s[:host]] }, required: true)
+      end
+
+      def on_event(event)
+        server = SERVERS.find { |s| s[:host] == event.options['server'] }
+
+        return event.respond(content: 'server not found') unless server
+
+        stats = MineStat.new(
+          server[:host],
+          server[:port],
+          2, # timeout in seconds
+          server[:bedrock] ? MineStat::Request::BEDROCK : MineStat::Request::JSON
+        )
+
+        event.respond(embeds: [build_embed(stats)])
       end
 
       private
 
-      def build_embed(stats, embed)
+      def build_embed(stats)
+        embed = Discordrb::Webhooks::Embed.new
         embed.thumbnail = { url: 'https://i.imgur.com/5DnHbTs.png' }
         embed.add_field(name: 'Host', value: stats.address, inline: true)
         embed.add_field(name: 'Port', value: stats.port, inline: true)
-
         if stats.online
           embed.color = '#42BE65'
           embed.title = stats.stripped_motd
@@ -42,6 +47,8 @@ module Rebbot
           embed.title = 'Minecraft server'
           embed.description = 'Server is offline.'
         end
+
+        embed
       end
     end
   end

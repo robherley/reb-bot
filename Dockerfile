@@ -1,14 +1,16 @@
 FROM ruby:3.1.1-alpine
 
-RUN bundle config --global frozen 1
-
 WORKDIR /usr/src/app
 
-RUN apk --update add build-base libsodium
+RUN apk --update add build-base libsodium git
+
+RUN bundle config --global frozen 1
 
 COPY Gemfile Gemfile.lock ./
-RUN bundle install
+COPY script/setup ./script/setup
+
+RUN script/setup
 
 COPY . .
 
-CMD ["ruby", "./run.rb"]
+CMD ["script/run"]

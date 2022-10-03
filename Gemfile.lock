@@ -1,17 +1,23 @@
+GIT
+  remote: https://github.com/robherley/discordrb.git
+  revision: ad88821f05e4c217a6589256cfbcb81899363729
+  branch: robherley/fix-multipart-webhook-msgs
+  specs:
+    discordrb (3.4.2)
+      discordrb-webhooks (~> 3.4.2)
+      ffi (>= 1.9.24)
+      opus-ruby
+      rest-client (>= 2.0.0)
+      websocket-client-simple (>= 0.3.0)
+    discordrb-webhooks (3.4.2)
+      rest-client (>= 2.0.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
     artii (2.1.2)
     coderay (1.1.3)
     concurrent-ruby (1.1.10)
-    discordrb (3.4.0)
-      discordrb-webhooks (~> 3.3.0)
-      ffi (>= 1.9.24)
-      opus-ruby
-      rest-client (>= 2.0.0)
-      websocket-client-simple (>= 0.3.0)
-    discordrb-webhooks (3.3.0)
-      rest-client (>= 2.1.0.rc1)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     dotenv (2.7.6)
@@ -44,7 +50,7 @@ GEM
     ffi (1.15.5)
     hashie (5.0.0)
     http-accept (1.7.0)
-    http-cookie (1.0.4)
+    http-cookie (1.0.5)
       domain_name (~> 0.5)
     i18n (1.12.0)
       concurrent-ruby (~> 1.0)
@@ -76,9 +82,9 @@ GEM
     ruby_cowsay (0.1.3)
     unf (0.1.4)
       unf_ext
-    unf_ext (0.0.8.1)
+    unf_ext (0.0.8.2)
     websocket (1.2.9)
-    websocket-client-simple (0.5.1)
+    websocket-client-simple (0.6.0)
       event_emitter
       websocket
 
@@ -89,7 +95,7 @@ PLATFORMS
 
 DEPENDENCIES
   artii
-  discordrb
+  discordrb!
   dotenv
   faraday
   iex-ruby-client
