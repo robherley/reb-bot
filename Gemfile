@@ -10,6 +10,7 @@ gem 'iex-ruby-client'
 gem 'minestat'
 gem 'redis'
 gem 'ruby_cowsay'
+gem 'terminal-table'
 
 group :development do
   gem 'pry'
