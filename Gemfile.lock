@@ -1,7 +1,7 @@
 GIT
-  remote: https://github.com/shardlab/discordrb.git
-  revision: dc27fe18463da3ccfd0f0266030aa7ad51b2c2b9
-  branch: main
+  remote: https://github.com/robherley/discordrb.git
+  revision: ad88821f05e4c217a6589256cfbcb81899363729
+  branch: robherley/fix-multipart-webhook-msgs
   specs:
     discordrb (3.4.2)
       discordrb-webhooks (~> 3.4.2)

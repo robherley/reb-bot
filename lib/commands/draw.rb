@@ -10,45 +10,69 @@ module Rebbot
       def with_options(cmd)
         cmd.string('prompt', 'what to draw', required: true)
         cmd.string('negative', 'what to not to draw')
-        cmd.number('cfg_scale', 'CFG scale', min_value: 1, max_value: 30)
-        cmd.number('sampling_steps', 'sampling steps', min_value: 1, max_value: 150)
-        cmd.string('sampling_method', 'sampling method', choices: METHODS.map { |m| [m, m] })
-        cmd.number('batch_size', 'batch size', min_value: 1, max_value: 8)
+        cmd.number('cfg_scale', 'CFG scale (1-30, default: 7)', min_value: 1, max_value: 30)
+        cmd.number('sampling_steps', 'sampling steps (1-150, default: 20)', min_value: 1, max_value: 150)
+        cmd.string('sampling_method', 'sampling method (default: \'Euler a\')', choices: METHODS.map { |m| [m, m] })
+        cmd.number('batch_size', 'batch size (1-8, default: 1)', min_value: 1, max_value: 8)
       end
 
       def on_event(event)
+        return event.respond(content: "😔 Server is offline, help! <@#{Rebbot::ROB_ID}>") if offline?
+
+        send_initial_message(event)
+
         request_body = build_request(**event.options.transform_keys(&:to_sym))
 
-        conn = Faraday.new(
-          url: 'http://m1.lab.reb.gg:7860',
-          headers: { 'Content-Type' => 'application/json' }
-        )
-
-        message = event.send_message("🎨 Drawing '#{event.options['prompt']}' ⌛")
-        response = conn.post('/api/predict/') do |req|
-          req.body = request_body
+        response = draw_api.post('/api/predict/') do |req|
+          req.body = request_body.to_json
         end
 
         json = JSON.parse(response.body)
-        images = json['data'].first
+        event.edit_response(content: '❌ An error occurred 🤷‍♂️') if json.keys.include? 'error'
 
-        images.each do |img|
+        json['data'].first.each do |img|
           create_and_send_file(event, img)
         end
       end
 
       private
 
-      def create_and_send_file(event, img)
-        tmp = Tempfile.new('drawing')
-        begin
-          tmp.write(Base64.decode64(img.split('base64,').last))
-          tmp.rewind
-          event.send_file(tmp, filename: 'drawing.png')
-        ensure
-          tmp.close
-          tmp.unlink
+      def offline?
+        response = draw_api.get do |req|
+          req.url '/'
+          req.options[:timeout] = 2
         end
+        response.status != 200
+      rescue Faraday::Error, Faraday::Timeout
+        true
+      end
+
+      def draw_api
+        Faraday.new(
+          url: 'http://m1.lab.reb.gg:7860', # TODO: env var?
+          headers: { 'Content-Type' => 'application/json' }
+        )
+      end
+
+      def send_initial_message(event)
+        message = "🎨 Drawing '#{event.options['prompt']}'"
+        extra_args = event.options.except('prompt')
+        message += " with #{extra_args.entries.map { |a, b| "`#{a}='#{b}'`" }.join(', ')}" unless extra_args.empty?
+
+        event.respond(content: message)
+      end
+
+      def create_and_send_file(event, img)
+        tmpfile = Tempfile.new(['drawing', '.png'])
+        tmpfile.write(Base64.decode64(img.split('base64,').last))
+        tmpfile.rewind
+
+        event.send_message do |builder|
+          builder.file = tmpfile
+        end
+      ensure
+        tmpfile.close
+        tmpfile.unlink
       end
 
       # there isn't an API yet: https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/765
@@ -69,7 +93,7 @@ module Rebbot
             'None',
             'None',
             sampling_steps.to_i,
-            sampling_method.to_i,
+            sampling_method,
             false,
             false,
             1,

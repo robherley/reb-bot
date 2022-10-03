@@ -3,7 +3,7 @@
 source 'https://rubygems.org'
 
 gem 'artii'
-gem 'discordrb', github: 'shardlab/discordrb', branch: 'main'
+gem 'discordrb', github: 'robherley/discordrb', branch: 'robherley/fix-multipart-webhook-msgs'
 gem 'dotenv'
 gem 'faraday'
 gem 'iex-ruby-client'

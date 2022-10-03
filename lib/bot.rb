@@ -6,8 +6,6 @@ Dir[File.expand_path('./commands/*.rb', __dir__)].sort.each { |file| require fil
 
 module Rebbot
   class Bot < Discordrb::Bot
-    alias registered_commands get_application_commands
-
     def initialize(**kwargs)
       super(
         token: kwargs[:discord_token],
@@ -24,14 +22,25 @@ module Rebbot
       @commands = (Rebbot::Commands.constants - [:Base]).map { |c| Rebbot::Commands.const_get(c).new }
     end
 
-    # registers commannds to a server, or nil for global
+    # registers commannds on a specific server (nil for global)
+    def registered_commands(server_id)
+      get_application_commands(server_id: server_id)
+    end
+
+    # registers commannds on a specific server (nil for global)
     def register_commands!(server_id)
       commands.map { |cmd| cmd.register_to_server(self, server_id: server_id) }
     end
 
-    # deletes commannds to a server, or nil for global
+    # deletes commands on a specific server (nil for global)
     def delete_commands!(server_id)
-      registered_commands(server_id: server_id).each(&:delete)
+      registered_commands(server_id).each(&:delete)
+    end
+
+    # deletes commands then registers on a specific server (nil for global)
+    def reload_commands!(server_id)
+      delete_commands!(server_id)
+      register_commands!(server_id)
     end
 
     private
@@ -50,6 +59,6 @@ class Discordrb::Events::ApplicationCommandEvent
   end
 
   def from_test_server?
-    Rebbot::TEST_SERVER_ID == server.id
+    Rebbot::TEST_SERVER_IDS.include? server.id
   end
 end
