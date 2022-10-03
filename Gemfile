@@ -8,6 +8,7 @@ gem 'dotenv'
 gem 'faraday'
 gem 'iex-ruby-client'
 gem 'minestat'
+gem 'redis'
 gem 'ruby_cowsay'
 
 group :development do

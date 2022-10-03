@@ -7,6 +7,8 @@ Dir[File.expand_path('./events/*.rb', __dir__)].sort.each { |file| require file 
 
 module Rebbot
   class Bot < Discordrb::Bot
+    attr_reader :redis
+
     def initialize(**kwargs)
       super(
         token: kwargs[:discord_token],
@@ -14,6 +16,7 @@ module Rebbot
       )
 
       add_command_handlers
+      connect_redis
 
       include! Rebbot::Events::Deprecated
     end
@@ -51,6 +54,10 @@ module Rebbot
     # setup handler for all the defined Rebbot::Commands
     def add_command_handlers
       commands.each { |cmd| cmd.add_handler(self) }
+    end
+
+    def connect_redis
+      @redis = Redis.new(url: ENV['REDIS_URL'])
     end
   end
 end
