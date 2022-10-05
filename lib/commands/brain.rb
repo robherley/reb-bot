@@ -29,7 +29,7 @@ module Rebbot
       private
 
       def leaderboard(event)
-        top10 = event.bot.redis.zrange(REDIS_KEY, 0, 50, rev: true, with_scores: true)
+        top10 = event.bot.redis.zrevrange(REDIS_KEY, 0, -1, with_scores: true)
 
         rows = top10.map do |user_id, score|
           user = event.server.members.find { |m| m.id == user_id&.to_i }
