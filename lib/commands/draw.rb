@@ -6,6 +6,7 @@ module Rebbot
       on :draw, description: 'txt2img with stable diffusion'
 
       METHODS = ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a', 'DDIM', 'PLMS'].freeze
+      API_PATH = '/sdapi/v1/txt2img'
 
       def with_options(cmd)
         cmd.string('prompt', 'what to draw', required: true)
@@ -14,25 +15,31 @@ module Rebbot
         cmd.number('sampling_steps', 'sampling steps (1-150, default: 20)', min_value: 1, max_value: 150)
         cmd.string('sampling_method', 'sampling method (default: \'Euler a\')', choices: METHODS.map { |m| [m, m] })
         cmd.number('batch_size', 'batch size (1-8, default: 1)', min_value: 1, max_value: 8)
+        cmd.number('width', 'image width (64-2048, default: 512)', min_value: 64, max_value: 2048)
+        cmd.number('height', 'image height (64-2048, default: 512)', min_value: 64, max_value: 2048)
+        cmd.number('seed', 'reproducible seed')
       end
 
       def on_event(event)
+        opts = event.options.transform_keys(&:to_sym)
+
+        invalid = check_opts(opts)
+        return event.respond(content: "⚠️ Invalid option: #{invalid}") if invalid
+
         return event.respond(content: "😔 Server is offline, help! <@#{Rebbot::ROB_ID}>") if offline?
 
         send_initial_message(event)
 
-        request_body = build_request(**event.options.transform_keys(&:to_sym))
+        request_body = build_request(**opts)
 
-        response = draw_api.post('/api/predict/') do |req|
+        response = draw_api.post(API_PATH) do |req|
           req.body = request_body.to_json
         end
 
         json = JSON.parse(response.body)
-        event.edit_response(content: '❌ An error occurred 🤷‍♂️') if json.keys.include? 'error'
-
-        json['data'].first.each do |img|
-          create_and_send_file(event, img)
-        end
+        create_and_send_files(event, json['images'])
+      rescue Faraday::Error, JSON::ParserError => e
+        event.edit_response(content: "💀 An error occurred: #{e}, help! <@#{Rebbot::ROB_ID}>")
       end
 
       private
@@ -51,7 +58,9 @@ module Rebbot
         Faraday.new(
           url: 'http://m1.lab.reb.gg:7860', # TODO: env var?
           headers: { 'Content-Type' => 'application/json' }
-        )
+        ) do |c|
+          c.use Faraday::Response::RaiseError
+        end
       end
 
       def send_initial_message(event)
@@ -62,70 +71,60 @@ module Rebbot
         event.respond(content: message)
       end
 
-      def create_and_send_file(event, img)
-        tmpfile = Tempfile.new(['drawing', '.png'])
-        tmpfile.write(Base64.decode64(img.split('base64,').last))
-        tmpfile.rewind
+      def create_and_send_files(event, imgs)
+        tmpfiles = []
+
+        imgs.each do |img|
+          tmpfile = Tempfile.new(['drawing', '.png'])
+          tmpfiles << tmpfile
+          tmpfile.write(Base64.decode64(img.split('base64,').last))
+          tmpfile.rewind
+        end
 
         event.send_message do |builder|
-          builder.file = tmpfile
+          builder.attachments = tmpfiles
         end
       ensure
-        tmpfile.close
-        tmpfile.unlink
+        tmpfiles.each do |tmpfile|
+          tmpfile.close
+          tmpfile.unlink
+        end
       end
 
-      # there isn't an API yet: https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/765
-      # hacking on the webui's /predict endpoint for now
+      def check_opts(opts)
+        %i[height width].each do |opt|
+          next unless opts[opt]
+
+          return "`#{opt}` cannot be greater than 2048" if opts[opt] > 2048
+          return "`#{opt}` must be divisible by 64" unless (opts[opt] % 64).zero?
+        end
+
+        nil
+      end
+
+      # for more fields see: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API
       def build_request(
         prompt: '',
         negative: '',
         cfg_scale: 7,
         sampling_steps: 20,
         sampling_method: 'Euler a',
-        batch_size: 1
+        batch_size: 1,
+        width: 512,
+        height: 512,
+        seed: nil
       )
         {
-          fn_index: 11,
-          data: [
-            prompt,
-            negative,
-            'None',
-            'None',
-            sampling_steps.to_i,
-            sampling_method,
-            false,
-            false,
-            1,
-            batch_size.to_i,
-            cfg_scale.to_i,
-            -1,
-            -1,
-            0,
-            0,
-            0,
-            false,
-            512, # width
-            512, # height
-            false,
-            false,
-            0.7,
-            'None',
-            false,
-            nil,
-            '',
-            false,
-            'Seed',
-            '',
-            'Steps',
-            '',
-            true,
-            false,
-            nil,
-            '',
-            ''
-          ]
-        }
+          prompt: prompt,
+          negative_prompt: negative,
+          cfg_scale: cfg_scale,
+          steps: sampling_steps,
+          sampler_name: sampling_method,
+          batch_size: batch_size,
+          width: width,
+          height: height,
+          seed: seed
+        }.compact
       end
     end
   end
