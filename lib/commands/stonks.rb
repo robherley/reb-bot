@@ -3,19 +3,9 @@
 module Rebbot
   module Commands
     class Stonks < Rebbot::Commands::Base
+      class WSJBadDataError < StandardError; end
+
       on :stonks, description: 'get some stonks for a ticker'
-
-      def initialize
-        super
-
-        Money.rounding_mode = BigDecimal::ROUND_HALF_EVEN
-
-        @iex_client = IEX::Api::Client.new(
-          publishable_token: ENV['IEX_PUB_TOKEN'],
-          secret_token: ENV['IEX_SECRET_TOKEN'],
-          endpoint: 'https://cloud.iexapis.com/v1'
-        )
-      end
 
       def with_options(cmd)
         cmd.string('ticker', 'ticker of stock', required: true)
@@ -26,61 +16,120 @@ module Rebbot
       def on_event(event)
         ticker = event.options['ticker']
         is_stats = event.options['stats']
-        payload = is_stats ? fetch_stats(ticker) : fetch_stonk(ticker)
+        payload = is_stats ? profile(ticker) : quote(ticker)
 
-        return event.respond(content: "no stonks found for `#{ticker.upcase}`") unless payload
+        return event.respond(content: "no #{is_stats ? 'stats' : 'stonks'} found for `#{ticker.upcase}`") unless payload
         return event.respond(content: "```json\n#{JSON.pretty_generate(payload)}```") if event.options['raw']
 
-        content = is_stats ? build_stats(ticker, payload) : build_stonk(payload)
-        event.respond(content: content)
+        is_stats ? send_stats(event, payload) : send_quote(event, payload)
+      rescue Faraday::Error => e
+        event.respond(content: "💀 An error occurred: #{e.message}")
       end
 
       private
 
-      def fetch_stonk(ticker)
-        @iex_client.quote(ticker)
-      rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
-        nil
+      def stonks_api
+        Faraday.new(
+          url: 'https://financialmodelingprep.com',
+          params: {
+            apikey: ENV['FMP_APIKEY']
+          }
+        ) do |c|
+          c.use Faraday::Response::RaiseError
+          c.response :json
+        end
       end
 
-      def build_stonk(payload)
-        after_hours = (payload.extended_price_time || 0) > (payload.iex_last_updated || 0)
+      def quote(query)
+        stonks_api.get("/api/v3/quote/#{query}").body&.first
+      end
 
-        content = "**#{payload.symbol}** #{change_text(payload.latest_price, payload.change_percent)}"
+      def profile(query)
+        stonks_api.get("/api/v3/profile/#{query}").body&.first&.except('description')
+      end
 
-        if after_hours
-          content += "\n🌙 After hours #{change_text(payload.extended_price, payload.extended_change_percent)}"
+      def wsj(ticker)
+        conn = Faraday.new(
+          url: 'https://www.wsj.com',
+          headers: {
+            'User-Agent': 'rebbot'
+          }
+        ) do |c|
+          c.use Faraday::Response::RaiseError
         end
 
-        content
-      end
-
-      def fetch_stats(ticker)
-        @iex_client.key_stats(ticker)
-      rescue IEX::Errors::SymbolNotFoundError, IEX::Errors::ClientError
+        conn.get("/market-data/quotes/#{ticker}").body
+      rescue Faraday::Error
         nil
       end
 
-      def build_stats(ticker, payload)
-        title = "**#{payload.company_name}** (#{ticker.upcase})"
-        employees = "🧑 **Employees**: `#{payload.employees}`"
-        market_cap = "💰 **Market Cap**: `#{payload.market_cap_dollar}`"
-        next_earnings = "🗓️ **Earnings Date**: `#{payload.next_earnings_date}`" unless payload.next_earnings_date.empty?
+      def after_hours(ticker)
+        attempts ||= 0
 
-        pos = payload.ytd_change_percent&.positive?
-        ytd = "#{emoji(pos)} **YTD**: `#{payload.ytd_change_percent_s}`"
+        res = wsj(ticker)
+        return nil unless res
 
-        [title, employees, market_cap, next_earnings, ytd].compact.join("\n")
+        html = Nokogiri::HTML4(res)
+        snag = ->(v) { html.css(v)&.first&.text&.to_f }
+
+        quote = {
+          'price' => snag.call('#ms_quote_val'),
+          'change' => snag.call('#ms_quote_change'),
+          'changesPercentage' => snag.call('#ms_quote_changePer')
+        }.compact
+
+        raise WSJBadDataError unless quote.any?
+
+        quote
+      rescue WSJBadDataError
+        retry if (attempts += 1) < 3
+
+        nil
       end
 
-      def change_text(price, change)
-        pos = change&.positive?
+      def market_open?
+        now = TZInfo::Timezone.get('America/New_York').now
+        return false if now.saturday? || now.sunday?
+        return false if now.hour == 9 && now.min < 30
 
-        "is #{pos ? '' : 'not '}stonks #{emoji(pos)} `$#{price} (#{(change * 100).round(2)}%)`"
+        now.hour > 9 && now.hour < 16
       end
 
-      def emoji(pos)
-        pos ? '📈' : '📉'
+      def send_quote(event, quote)
+        content = "**#{quote['symbol']}** #{change_text(quote)}"
+
+        unless market_open? || quote['exchange'] == 'CRYPTO'
+          after_quote = after_hours(quote['symbol'])
+          content += "\n🌙 After hours #{change_text(after_quote)}" if after_quote&.any?
+        end
+
+        event.respond(content: content)
+      end
+
+      def send_stats(event, profile)
+        embed = Discordrb::Webhooks::Embed.new
+        embed.title = profile['companyName']
+        embed.thumbnail = { url: profile['image'] } if profile['image']
+        embed.url = profile['website'] if profile['website']
+        embed.add_field(name: 'Ticker', value: profile['symbol'], inline: true)
+        embed.add_field(name: 'Price', value: profile['price'].to_s, inline: true)
+        embed.add_field(name: 'Exchange', value: profile['exchangeShortName'], inline: true)
+        embed.add_field(name: 'Market Cap', value: profile['mktCap'].abbr, inline: true)
+        embed.add_field(name: 'Volume Avg.', value: profile['volAvg'].abbr, inline: true)
+        embed.add_field(name: '52 Week Range', value: profile['range'], inline: true)
+        embed.add_field(name: 'IPO', value: profile['ipoDate'], inline: true)
+        embed.add_field(name: 'Employees', value: profile['fullTimeEmployees'].to_i.commas, inline: true)
+        embed.add_field(name: 'CEO', value: profile['ceo'], inline: true)
+        embed.add_field(name: 'Industry', value: profile['industry'], inline: true)
+        embed.add_field(name: 'Sector', value: profile['sector'], inline: true)
+
+        event.respond(embeds: [embed])
+      end
+
+      def change_text(quote)
+        pos = quote['changesPercentage']&.positive?
+        "is #{pos ? '' : 'not '}stonks #{pos ? '📈' : '📉'} " \
+          "`$#{quote['price']} (#{quote['changesPercentage']&.round(2)}%)`"
       end
     end
   end

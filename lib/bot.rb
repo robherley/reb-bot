@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative './constants'
+require_relative './util'
 
 Dir[File.expand_path('./commands/*.rb', __dir__)].sort.each { |file| require file }
 Dir[File.expand_path('./events/*.rb', __dir__)].sort.each { |file| require file }

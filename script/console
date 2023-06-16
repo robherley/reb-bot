@@ -9,12 +9,4 @@ bot = Rebbot::Bot.new(
   discord_token: ENV['DISCORD_TOKEN']
 )
 
-redis = bot.redis
-
-iex = IEX::Api::Client.new(
-  publishable_token: ENV['IEX_PUB_TOKEN'],
-  secret_token: ENV['IEX_SECRET_TOKEN'],
-  endpoint: 'https://cloud.iexapis.com/v1'
-)
-
 pry
