@@ -2,7 +2,7 @@ FROM ruby:3.1.3-alpine
 
 WORKDIR /usr/src/app
 
-RUN apk --update add build-base libsodium git
+RUN apk --update add build-base libsodium git tzdata
 
 RUN bundle config --global frozen 1
 
