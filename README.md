@@ -8,8 +8,7 @@ You'll need the following env vars (either `.env` or however you want to supply)
 
 ```sh
 DISCORD_TOKEN= # discord bot token
-IEX_PUB_TOKEN= # public token for iex cloud
-IEX_SECRET_TOKEN= # secret token for iex cloud
+FMP_APIKEY= # api key from https://financialmodelingprep.com
 REDIS_URL= # redis:// style connection URL
 ```
 
@@ -22,7 +21,7 @@ rob@local$ script/setup
 Then run:
 
 ```console
-rob@local$ script/setup
+rob@local$ script/run
 ```
 
 ## Creating a new command
