@@ -3,12 +3,13 @@
 require_relative './constants'
 require_relative './util'
 
+Dir[File.expand_path('./clients/*.rb', __dir__)].sort.each { |file| require file }
 Dir[File.expand_path('./commands/*.rb', __dir__)].sort.each { |file| require file }
 Dir[File.expand_path('./events/*.rb', __dir__)].sort.each { |file| require file }
 
 module Rebbot
   class Bot < Discordrb::Bot
-    attr_reader :redis
+    attr_reader :redis, :twitter
 
     def initialize(**kwargs)
       super(
@@ -18,8 +19,10 @@ module Rebbot
 
       add_command_handlers
       connect_redis
+      setup_twitter
 
       include! Rebbot::Events::Deprecated
+      include! Rebbot::Events::TwitterUnfurl
     end
 
     # all of the defined Rebbot::Commands
@@ -59,6 +62,10 @@ module Rebbot
 
     def connect_redis
       @redis = Redis.new(url: ENV['REDIS_URL'])
+    end
+
+    def setup_twitter
+      @twitter = Rebbot::Clients::Twitter.new
     end
   end
 end
