@@ -6,6 +6,7 @@ module Rebbot
       extend Discordrb::EventContainer
 
       message do |event|
+        next unless unfurl_enabled?
         next if event.from_bot?
 
         twitter = event.bot.twitter
@@ -19,6 +20,10 @@ module Rebbot
       end
     end
   end
+end
+
+def unfurl_enabled?
+  ENV.key? 'ENABLE_TWITTER_UNFURL'
 end
 
 def build_embed(tweet)
