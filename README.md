@@ -4,6 +4,10 @@
 
 ## Development
 
+Dependencies:
+- `ruby`: obviously
+- `imagemagick`: for rendering pretty charts 📊
+
 You'll need the following env vars (either `.env` or however you want to supply):
 
 ```sh

@@ -7,103 +7,48 @@ module Rebbot
 
       on :stonks, description: 'get some stonks for a ticker'
 
+      KINDS = %w[quote stats candlesticks].freeze
+
       def with_options(cmd)
         cmd.string('ticker', 'ticker of stock', required: true)
-        cmd.boolean('stats', 'return key statistics')
+        cmd.string('kind', 'kind of data to return', choices: KINDS.map { |k| [k, k] })
         cmd.boolean('raw', 'return as raw json')
       end
 
       def on_event(event)
         ticker = event.options['ticker']
-        is_stats = event.options['stats']
-        payload = is_stats ? profile(ticker) : quote(ticker)
+        return event.respond(content: 'invalid ticker') unless ticker.match?(/\A[a-zA-Z]+\z/)
+        kind = event.options['kind'] || 'quote'
 
-        return event.respond(content: "no #{is_stats ? 'stats' : 'stonks'} found for `#{ticker.upcase}`") unless payload
-        return event.respond(content: "```json\n#{JSON.pretty_generate(payload)}```") if event.options['raw']
+        payload = case kind
+          when 'quote'
+            event.bot.fmp.quote(ticker)
+          when 'stats'
+            event.bot.fmp.stats(ticker)
+          when 'candlesticks'
+            event.bot.fmp.historical(ticker)
+          end
 
-        is_stats ? send_stats(event, payload) : send_quote(event, payload)
+        return event.respond(content: "#{kind} data not found for `#{ticker.upcase}`") unless payload
+        event.respond(content: "```json\n#{JSON.pretty_generate(payload)[0..1900]}```")if event.options['raw']
+
+        case kind
+        when 'quote'
+          send_quote(event, payload)
+        when 'stats'
+          send_stats(event, payload)
+        when 'candlesticks'
+          send_candles(event, payload, ticker)
+        end
+
       rescue Faraday::Error => e
         event.respond(content: "💀 An error occurred: #{e.message}")
       end
 
       private
 
-      def stonks_api
-        Faraday.new(
-          url: 'https://financialmodelingprep.com',
-          params: {
-            apikey: ENV['FMP_APIKEY']
-          }
-        ) do |c|
-          c.use Faraday::Response::RaiseError
-          c.response :json
-        end
-      end
-
-      def quote(query)
-        stonks_api.get("/api/v3/quote/#{query}").body&.first
-      end
-
-      def profile(query)
-        stonks_api.get("/api/v3/profile/#{query}").body&.first&.except('description')
-      end
-
-      def wsj(ticker)
-        conn = Faraday.new(
-          url: 'https://www.wsj.com',
-          headers: {
-            'User-Agent': 'rebbot'
-          }
-        ) do |c|
-          c.use Faraday::Response::RaiseError
-        end
-
-        conn.get("/market-data/quotes/#{ticker}").body
-      rescue Faraday::Error
-        nil
-      end
-
-      def after_hours(ticker)
-        attempts ||= 0
-
-        res = wsj(ticker)
-        return nil unless res
-
-        html = Nokogiri::HTML4(res)
-        snag = ->(v) { html.css(v)&.first&.text&.to_f }
-
-        quote = {
-          'price' => snag.call('#ms_quote_val'),
-          'change' => snag.call('#ms_quote_change'),
-          'changesPercentage' => snag.call('#ms_quote_changePer')
-        }.compact
-
-        raise WSJBadDataError unless quote.any?
-
-        quote
-      rescue WSJBadDataError
-        retry if (attempts += 1) < 3
-
-        nil
-      end
-
-      def market_open?
-        now = TZInfo::Timezone.get('America/New_York').now
-        return false if now.saturday? || now.sunday?
-        return false if now.hour == 9 && now.min < 30
-
-        now.hour > 9 && now.hour < 16
-      end
-
       def send_quote(event, quote)
-        content = "**#{quote['symbol']}** #{change_text(quote)}"
-
-        unless market_open? || quote['exchange'] == 'CRYPTO'
-          after_quote = after_hours(quote['symbol'])
-          content += "\n🌙 After hours #{change_text(after_quote)}" if after_quote&.any?
-        end
-
-        event.respond(content: content)
+        event.respond(content: "**#{quote['symbol']}** #{change_text(quote)}")
       end
 
       def send_stats(event, profile)
@@ -124,6 +69,52 @@ module Rebbot
         embed.add_field(name: 'Sector', value: profile['sector'], inline: true)
 
         event.respond(embeds: [embed])
+      end
+
+      def send_candles(event, historical, ticker)
+        data = historical.reverse.map { |entry| entry.transform_keys(&:to_sym) }
+        return if data.empty?
+
+        chart = Gruff::Candlestick.new(1200)
+        data.each do |entry|
+          chart.data(**entry.slice(:low, :high, :open, :close))
+        end
+
+        chart.down_color = "#D54A45"
+        chart.up_color = "#59A74B"
+        chart.theme = {
+          background_colors: %w[#0a0a0a, #0a0a0a],
+          font_color: '#EDEDED',
+          marker_color: '#292929',
+        }
+        chart.spacing_factor = 0.25
+
+        day = DateTime.parse(data.first[:date]).strftime('%-m/%d')
+        chart.title = "#{ticker} #{day}"
+        chart.label_rotation = 45.0
+        labels = data.each_with_index
+          .map { |v, i| [i, DateTime.parse(v[:date]).strftime('%-l:%M %p')] }
+        if labels.size > 40
+            labels = labels.select { |i, _| (i % 5).zero? }
+        elsif labels.size > 20
+          labels = labels.select { |i, _| i.even? }
+        end
+        chart.labels = labels.to_h
+
+        max = data.map { |e| e[:high] }.max
+        chart.maximum_value = max
+
+        min = data.map { |e| e[:low] }.min
+        chart.minimum_value = min
+
+        tmpfile = Tempfile.new(['chart', '.png'])
+        chart.write(tmpfile.path)
+        event.respond do |builder|
+          builder.attachments = [tmpfile]
+        end
+      ensure
+        tmpfile&.close
+        tmpfile&.unlink
       end
 
       def change_text(quote)

@@ -3,9 +3,10 @@
 source 'https://rubygems.org'
 
 gem 'artii'
-gem 'discordrb'
+gem 'discordrb', github: 'robherley/discordrb', branch: 'robherley/fix-multipart-webhook-msgs'
 gem 'dotenv'
 gem 'faraday'
+gem 'gruff'
 gem 'minestat'
 gem 'nokogiri'
 gem 'redis'
