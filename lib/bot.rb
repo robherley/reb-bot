@@ -9,7 +9,7 @@ Dir[File.expand_path('./events/*.rb', __dir__)].sort.each { |file| require file 
 
 module Rebbot
   class Bot < Discordrb::Bot
-    attr_reader :redis, :twitter
+    attr_reader :redis, :twitter, :fmp
 
     def initialize(**kwargs)
       super(
@@ -19,7 +19,7 @@ module Rebbot
 
       add_command_handlers
       connect_redis
-      setup_twitter
+      setup_clients
 
       include! Rebbot::Events::Deprecated
       include! Rebbot::Events::TwitterUnfurl
@@ -64,8 +64,9 @@ module Rebbot
       @redis = Redis.new(url: ENV['REDIS_URL'])
     end
 
-    def setup_twitter
+    def setup_clients
       @twitter = Rebbot::Clients::Twitter.new
+      @fmp = Rebbot::Clients::FMP.new(ENV['FMP_APIKEY'])
     end
   end
 end
