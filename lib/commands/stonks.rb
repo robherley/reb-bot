@@ -3,8 +3,6 @@
 module Rebbot
   module Commands
     class Stonks < Rebbot::Commands::Base
-      class WSJBadDataError < StandardError; end
-
       on :stonks, description: 'get some stonks for a ticker'
 
       KINDS = %w[quote stats candlesticks].freeze
@@ -118,9 +116,24 @@ module Rebbot
       end
 
       def change_text(quote)
-        pos = quote['changesPercentage']&.positive?
-        "is #{pos ? '' : 'not '}stonks #{pos ? '📈' : '📉'} " \
-          "`$#{quote['price']} (#{quote['changesPercentage']&.round(2)}%)`"
+        # Check for after hours data
+        after_hours_price = quote['afterMarketPrice'] || quote['extendedHoursPrice']
+        after_hours_change = quote['afterMarketChange'] || quote['extendedHoursChange']
+        after_hours_change_percent = quote['afterMarketChangePercent'] || quote['extendedHoursChangePercent']
+        
+        if after_hours_price && after_hours_change
+          # Show after hours data if available
+          pos = after_hours_change.positive?
+          regular_text = "`$#{quote['price']} (#{quote['changesPercentage']&.round(2)}%)`"
+          after_hours_text = "`AH: $#{after_hours_price} (#{after_hours_change_percent&.round(2)}%)`"
+          
+          "is #{pos ? '' : 'not '}stonks #{pos ? '📈' : '📉'} #{regular_text} #{after_hours_text}"
+        else
+          # Regular market hours display
+          pos = quote['changesPercentage']&.positive?
+          "is #{pos ? '' : 'not '}stonks #{pos ? '📈' : '📉'} " \
+            "`$#{quote['price']} (#{quote['changesPercentage']&.round(2)}%)`"
+        end
       end
     end
   end
