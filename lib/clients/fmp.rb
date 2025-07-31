@@ -47,6 +47,9 @@ module Rebbot
       private
 
       def get_after_hours_data(ticker)
+        # Only try to get after hours data if we're likely in after hours period
+        return nil unless likely_after_hours?
+        
         # Try multiple FMP endpoints for after hours data
         endpoints = [
           "/api/v3/pre-post-market-trade/#{ticker}",
@@ -134,6 +137,19 @@ module Rebbot
       rescue => e
         # Return nil if Yahoo Finance fails too
         nil
+      end
+
+      def likely_after_hours?
+        # Simple check: if it's outside normal market hours in Eastern Time
+        # Market hours are generally 9:30 AM - 4:00 PM ET
+        eastern_time = TZInfo::Timezone.get('America/New_York').now
+        hour = eastern_time.hour
+        
+        # Before 9:30 AM or after 4:00 PM ET
+        hour < 9 || (hour == 9 && eastern_time.min < 30) || hour >= 16
+      rescue => e
+        # If timezone detection fails, always try to get after hours data
+        true
       end
     end
   end
