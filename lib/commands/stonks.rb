@@ -58,9 +58,9 @@ module Rebbot
         embed.url = profile['website'] if profile['website']
         embed.add_field(name: 'Ticker', value: profile['symbol'], inline: true)
         embed.add_field(name: 'Price', value: profile['price'].to_s, inline: true)
-        embed.add_field(name: 'Exchange', value: profile['exchangeShortName'], inline: true)
-        embed.add_field(name: 'Market Cap', value: profile['mktCap'].abbr, inline: true)
-        embed.add_field(name: 'Volume Avg.', value: profile['volAvg'].abbr, inline: true)
+        embed.add_field(name: 'Exchange', value: profile['exchange'], inline: true)
+        embed.add_field(name: 'Market Cap', value: profile['marketCap'].abbr, inline: true)
+        embed.add_field(name: 'Volume Avg.', value: profile['averageVolume'].abbr, inline: true)
         embed.add_field(name: '52 Week Range', value: profile['range'], inline: true)
         embed.add_field(name: 'IPO', value: profile['ipoDate'], inline: true)
         embed.add_field(name: 'Employees', value: profile['fullTimeEmployees'].to_i.commas, inline: true)
@@ -118,9 +118,9 @@ module Rebbot
       end
 
       def change_text(quote)
-        pos = quote['changesPercentage']&.positive?
+        pos = quote['changePercentage']&.positive?
         "is #{pos ? '' : 'not '}stonks #{pos ? '📈' : '📉'} " \
-          "`$#{quote['price']} (#{quote['changesPercentage']&.round(2)}%)`"
+          "`$#{quote['price']} (#{quote['changePercentage']&.round(2)}%)`"
       end
     end
   end
