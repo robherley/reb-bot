@@ -18,17 +18,17 @@ module Rebbot
       end
 
       def quote(ticker)
-        @client.get("/api/v3/quote/#{ticker}").body&.first
+        @client.get('/stable/quote', symbol: ticker).body&.first
       end
 
       def stats(ticker)
-        @client.get("/api/v3/profile/#{ticker}").body&.first&.except('description')
+        @client.get('/stable/profile', symbol: ticker).body&.first&.except('description')
       end
 
       def historical(ticker)
         last_ts = quote(ticker)['timestamp']
         day = TZInfo::Timezone.get('America/New_York').utc_to_local(Time.at(last_ts)).strftime('%Y-%m-%d')
-        @client.get("/api/v3/historical-chart/5min/#{ticker}?from=#{day}&to=#{day}").body
+        @client.get('/stable/historical-chart/5min', symbol: ticker, from: day, to: day).body
       end
     end
   end
