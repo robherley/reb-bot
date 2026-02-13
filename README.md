@@ -25,14 +25,6 @@ Slash commands must be [registered with Discord](https://discord.com/developers/
 npm run register
 ```
 
-## Development
-
-Run locally with Vercel CLI:
-
-```console
-bun dev
-```
-
 ## Commands
 
 | Command | Description |
