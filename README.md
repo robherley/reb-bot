@@ -1,56 +1,48 @@
 # reb-bot
 
-🤖 Your friendly neighborhood discord bot.
+Your friendly neighborhood Discord bot 🤖
+
+## Setup
+
+You'll need the following environment variables:
+
+```sh
+DISCORD_PUBLIC_KEY=
+DISCORD_BOT_TOKEN=
+```
+
+Install dependencies:
+
+```console
+npm i
+```
+
+## Registering Commands
+
+Slash commands must be [registered with Discord](https://discord.com/developers/docs/interactions/application-commands#registering-a-command) before use:
+
+```console
+npm run register
+```
 
 ## Development
 
-Dependencies:
-- `ruby`: obviously
-- `imagemagick`: for rendering pretty charts 📊
-
-You'll need the following env vars (either `.env` or however you want to supply):
-
-```sh
-DISCORD_TOKEN= # discord bot token
-FMP_APIKEY= # api key from https://financialmodelingprep.com
-REDIS_URL= # redis:// style connection URL
-```
-
-Then setup:
+Run locally with Vercel CLI:
 
 ```console
-rob@local$ script/setup
+bun dev
 ```
 
-Then run:
+## Commands
 
-```console
-rob@local$ script/run
-```
-
-## Creating a new command
-
-Use the generator script:
-
-```console
-rob@local$ script/generate-command -n foobar
-command file generated: /workspaces/reb-bot/lib/commands/foobar.rb
-```
-
-And add your changes to the generated file.
-
-## Registering commands
-
-For bots that use slash commands, they must be [registered with Discord](https://discord.com/developers/docs/interactions/application-commands#registering-a-command). Commands can be registered globally, or to a specific server. During development, it's recommended to register to a specific server since it will update instantly, then register it globally when ready.
-
-Open a debug console with `script/console`:
-
-```ruby
-server_id = Rebbot::TEST_SERVER_ID # or nil for global
-
-# clean up old commands
-bot.delete_commands!(server_id)
-
-# register new commands
-bot.register_commands!(server_id)
-```
+| Command | Description |
+|---------|-------------|
+| `/ping` | Pong |
+| `/xkcd` | Fetch an xkcd comic (random or by number) |
+| `/figlet` | Render text as ASCII art |
+| `/cowsay` | Have a cow say something |
+| `/stonks` | Stock quote via Yahoo Finance |
+| `/mc` | Check Minecraft server status |
+| `/http` | HTTP status code image (cat or dog) |
+| `/github-status` | GitHub component status |
+| `/ppi` | Calculate pixels per inch |
