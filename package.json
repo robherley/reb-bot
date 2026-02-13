@@ -1,0 +1,22 @@
+{
+  "name": "reb-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "register": "node --env-file=.env --import tsx/esm scripts/register.ts"
+  },
+  "dependencies": {
+    "cowsay": "^1.6.0",
+    "discord-interactions": "^4.1.0",
+    "figlet": "^1.7.0",
+    "minecraft-server-util": "^5.4.0",
+    "table": "^6.9.0",
+    "yahoo-finance2": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
