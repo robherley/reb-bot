@@ -1,8 +1,6 @@
 import { InteractionResponseType } from "discord-interactions";
-import YahooFinance from "yahoo-finance2";
+import { getStockQuote, normalizeTicker } from "../lib/stocks.js";
 import { CommandOptionType, cmd } from "../types.js";
-
-const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 const fmt = (n: number | undefined, decimals = 2) =>
   n != null ? n.toFixed(decimals) : "N/A";
@@ -40,17 +38,18 @@ export default cmd(
     ],
   },
   async ({ ticker, extended }) => {
-    const symbol = ticker.toUpperCase().replace(/[^A-Z]/g, "");
-
-    if (!symbol) {
+    let symbol: string;
+    try {
+      symbol = normalizeTicker(ticker);
+    } catch {
       return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: "Invalid ticker." },
       };
     }
 
-    const quote = await yahooFinance.quote(symbol);
-    if (!quote?.regularMarketPrice) {
+    const quote = await getStockQuote(symbol);
+    if (!quote) {
       return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: { content: `No data found for '${symbol}'.` },

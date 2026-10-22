@@ -4,11 +4,26 @@ import { InteractionType } from "discord-interactions";
 import { discordGatewayRoute } from "../lib/discord-gateway.js";
 import interactions from "../../bot/interactions.js";
 
+type VisualizationState = DiscordChannelState & { visualizationTurnId?: string };
+
 const discord = discordChannel({
   route: "/api/interactions",
   events: {
+    async "action.result"(event, channel) {
+      const result = event.result;
+      if (result.kind !== "tool-result" || result.toolName !== "visualize" || result.isError) return;
+      const output: unknown = result.output;
+      if (output && typeof output === "object" && !Array.isArray(output)
+        && "sent" in output && "channelId" in output && "messageId" in output
+        && output.sent === true && output.channelId === channel.discord.channelId
+        && typeof output.messageId === "string") {
+        (channel.state as VisualizationState).visualizationTurnId = event.turnId;
+        channel.continuation?.alias(discordContinuationToken(channel.discord.channelId, output.messageId));
+      }
+    },
     async "message.completed"(event, channel) {
       if (event.finishReason === "tool-calls" || !event.message) return;
+      if ((channel.state as VisualizationState).visualizationTurnId === event.turnId) return;
       for (const content of splitDiscordMessageContent(event.message)) {
         const posted = await channel.discord.post(content);
         if (posted.id) {

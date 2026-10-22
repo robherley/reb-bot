@@ -15,7 +15,9 @@
     "node": "24.x"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "ai": "^7.0.148",
+    "dejavu-fonts-ttf": "^2.37.3",
     "discord-interactions": "^4.4.0",
     "discord.js": "^14.27.0",
     "eve": "^0.82.0",
