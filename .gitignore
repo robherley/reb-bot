@@ -176,5 +176,8 @@ dist
 
 ### Vercel ###
 .vercel
+.eve
+.output
+.nitro
 
 # End of https://www.toptal.com/developers/gitignore/api/vercel,macos,node

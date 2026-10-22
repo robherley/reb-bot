@@ -1,0 +1,9 @@
+**/node_modules
+.git
+.env*
+.vercel
+.eve
+.output
+.nitro
+dist
+**/*.test.ts

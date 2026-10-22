@@ -3,8 +3,8 @@ import {
   InteractionType,
   verifyKey,
 } from "discord-interactions";
-import { handlers } from "../src/commands/index.js";
-import type { Interaction } from "../src/types.js";
+import { handlers } from "./commands/index.js";
+import type { Interaction } from "./types.js";
 
 export default {
   async fetch(req: Request) {
