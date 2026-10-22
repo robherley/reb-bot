@@ -1,0 +1,10 @@
+buildCommand = "npm run build"
+
+[daemons.discord-gateway]
+root = "."
+entrypoint = "Dockerfile.gateway"
+instances = { iad1 = 1 }
+terminationGracePeriodSeconds = 30
+
+[daemons.discord-gateway.resources.requests]
+memory = "1Gi"
