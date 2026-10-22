@@ -2,63 +2,24 @@
 
 Your friendly neighborhood Discord bot 🤖
 
-Slash commands use the original handlers in `bot/commands/`. Mentions use an Eve
-agent with GPT-6 Luna Fast (low reasoning) and a persistent TypeScript Gateway
-daemon. Both reply as the same Discord bot.
+## Deployment
 
-## AI mentions and deployment
+Deploy to Vercel with the **Eve** framework preset and **Node.js 24**.
+Set these project environment variables:
 
-Use Node.js 24. Run `npm run dev` for Eve locally and `npm run build` for deployment.
-The existing Discord Interactions Endpoint URL stays **`/api/interactions`**:
-slash commands go to reb-bot, while Eve handles its approval buttons and modals.
-`api/interactions.ts` has moved to `bot/interactions.ts`; Eve now mounts the URL.
+| Variable | Value |
+| --- | --- |
+| `DISCORD_BOT_TOKEN` | Discord bot token |
+| `DISCORD_PUBLIC_KEY` | Discord application public key |
+| `DISCORD_APPLICATION_ID` | Discord application ID |
+| `DISCORD_GATEWAY_SECRET` | Shared secret; generate with `openssl rand -hex 32` |
+| `DISCORD_GATEWAY_APP_URL` | Production origin, e.g. `https://reb.wtf` |
+| `DISCORD_GUILD_ID` | Optional: restrict the bot to one server |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | Required if Deployment Protection covers the app |
 
-Set these Vercel **Production** variables for the **reb-bot** project:
-
-- `DISCORD_BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_APPLICATION_ID`: reb-bot's credentials.
-- `DISCORD_GATEWAY_SECRET`: generate a fresh secret with `openssl rand -hex 32`.
-- `DISCORD_GATEWAY_APP_URL`: reb-bot's stable production origin.
-- Optionally `DISCORD_GUILD_ID` to restrict mentions to one server.
-- `VERCEL_AUTOMATION_BYPASS_SECRET` if Deployment Protection covers the production app.
-
-Enable **Message Content Intent on reb-bot's application** in Discord, and allow
-the bot to view channels and send messages (including in threads). On Vercel,
-select the **Eve** framework preset for this project and use Node.js 24. Deploy
-to production to start the daemon configured in `vercel.toml`.
-
-Existing registered slash commands need no re-registration. `npm run register`
-continues to register all seven commands; do not use Rev's `/ask` registration
-script. The registration script accepts `DISCORD_BOT_TOKEN` or the legacy
-`DISCORD_TOKEN` variable.
-
-Rev's separate deployment does not need to run for reb-bot to work. After testing
-the merged bot, stop Rev's daemon if you no longer want that separate bot online.
-
-See [`gateway/README.md`](gateway/README.md) for
-daemon development and mention behavior. Repeated mentions in a thread share
-an AI session; after the first mention, human messages in that thread receive
-automatic replies. Direct replies to AI messages continue the original session
-without a mention. Top-level mentions start independent sessions.
-
-Checks: `npm run typecheck` and `npm run build`.
-
-All code shares the root `package.json`, lockfile, and TypeScript configuration.
-`Dockerfile.gateway` builds the gateway using the repository root as its context.
-
-## Setup
-
-You'll need the following environment variables:
-
-```sh
-DISCORD_PUBLIC_KEY=
-DISCORD_BOT_TOKEN=
-```
-
-Install dependencies:
-
-```console
-npm i
-```
+Set Discord's Interactions Endpoint URL to `https://<your-domain>/api/interactions`
+and enable **Message Content Intent**. See the [gateway README](gateway/README.md)
+for daemon setup and local development.
 
 ## Registering Commands
 
