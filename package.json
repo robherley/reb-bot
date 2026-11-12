@@ -8,6 +8,7 @@
     "dev": "eve dev",
     "start": "eve start",
     "typecheck": "tsc",
+    "test": "node --import tsx/esm --test tests/*.test.ts",
     "gateway": "node --env-file=.env.local gateway/index.ts",
     "register": "node --env-file=.env --import tsx/esm --input-type=module -e 'import { registerCommands } from \"./bot/register.ts\"; await registerCommands();'"
   },
@@ -20,7 +21,7 @@
     "dejavu-fonts-ttf": "^2.37.3",
     "discord-interactions": "^4.4.0",
     "discord.js": "^14.27.0",
-    "eve": "^0.82.0",
+    "eve": "^1.0.0-rc.10",
     "minecraft-server-util": "^5.4.4",
     "table": "^6.9.0",
     "yahoo-finance2": "^4.0.5",

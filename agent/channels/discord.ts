@@ -1,5 +1,6 @@
-import { discordChannel, discordContinuationToken, splitDiscordMessageContent, type DiscordChannelState } from "eve/channels/discord";
+import { discordChannel, discordContinuationToken, type DiscordChannelState } from "eve/channels/discord";
 import { POST } from "eve/channels";
+import { call } from "eve/events";
 import { InteractionType } from "discord-interactions";
 import { discordGatewayRoute } from "../lib/discord-gateway.js";
 import interactions from "../../bot/interactions.js";
@@ -9,27 +10,28 @@ type VisualizationState = DiscordChannelState & { visualizationTurnId?: string }
 const discord = discordChannel({
   route: "/api/interactions",
   events: {
-    async "action.result"(event, channel) {
-      const result = event.result;
-      if (result.kind !== "tool-result" || result.toolName !== "visualize" || result.isError) return;
-      const output: unknown = result.output;
+    async "call.settled"(event, { channel, view }) {
+      const result = call(view, event.data.callId);
+      if (result?.kind !== "tool" || result.name !== "visualize" || event.data.outcome !== "completed") return;
+      const output: unknown = event.data.output;
       if (output && typeof output === "object" && !Array.isArray(output)
         && "sent" in output && "channelId" in output && "messageId" in output
         && output.sent === true && output.channelId === channel.discord.channelId
         && typeof output.messageId === "string") {
-        (channel.state as VisualizationState).visualizationTurnId = event.turnId;
-        channel.continuation?.alias(discordContinuationToken(channel.discord.channelId, output.messageId));
+        (channel.state as VisualizationState).visualizationTurnId = event.scope?.turnId;
+        channel.continuation?.alias(discordContinuationToken({
+          channelId: channel.discord.channelId,
+          conversationId: output.messageId,
+        }));
       }
     },
-    async "message.completed"(event, channel) {
-      if (event.finishReason === "tool-calls" || !event.message) return;
-      if ((channel.state as VisualizationState).visualizationTurnId === event.turnId) return;
-      for (const content of splitDiscordMessageContent(event.message)) {
-        const posted = await channel.discord.post(content);
-        if (posted.id) {
-          channel.continuation?.alias(discordContinuationToken(channel.discord.channelId, posted.id));
-        }
-      }
+    async "content.completed"(event, { channel }) {
+      if (event.data.kind !== "text" || event.data.phase !== "reply"
+        || typeof event.data.value !== "string" || !event.data.value) return;
+      const visualizationTurnId = (channel.state as VisualizationState).visualizationTurnId;
+      if (visualizationTurnId && visualizationTurnId === event.scope?.turnId) return;
+      // Eve now splits long messages and persists continuation aliases inside post().
+      await channel.discord.post(event.data.value);
     },
   },
 });

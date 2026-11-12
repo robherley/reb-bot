@@ -42,10 +42,10 @@ export const discordGatewayRoute = POST<DiscordChannelState>(
     // Reply aliases are persisted by the Discord output handler, not daemon memory.
     let anchor = message.isThread ? message.channelId : message.id;
     if (message.replyToBotMessageId) {
-      const replyAddress = discordContinuationToken(message.channelId, message.replyToBotMessageId);
+      const replyAddress = discordContinuationToken({ channelId: message.channelId, conversationId: message.replyToBotMessageId });
       if (await resolveSession(replyAddress)) anchor = message.replyToBotMessageId;
     }
-    const address = discordContinuationToken(message.channelId, anchor);
+    const address = discordContinuationToken({ channelId: message.channelId, conversationId: anchor });
     if (!message.mentioned && !(await resolveSession(address))) {
       // Don't start AI conversations in unrelated threads or on legacy slash-command replies.
       return new Response(null, { status: 204 });
@@ -80,12 +80,9 @@ export const discordGatewayRoute = POST<DiscordChannelState>(
         conversationId: anchor,
         guildId: message.guildId,
         applicationId: message.applicationId,
-        interactionToken: null,
-        initialResponseSent: true,
-        hasMessageAnchor: true,
       },
     });
 
-    return Response.json({ sessionId: session.id }, { status: 202 });
+    return Response.json({ sessionId: session.sessionId }, { status: 202 });
   },
 );
