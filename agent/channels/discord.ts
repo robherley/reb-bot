@@ -4,6 +4,7 @@ import { call } from "eve/events";
 import { InteractionType } from "discord-interactions";
 import { discordGatewayRoute } from "../lib/discord-gateway.js";
 import interactions from "../../bot/interactions.js";
+import { bindCodingThread, type CodingThreadState } from "../lib/coding-thread.js";
 
 type VisualizationState = DiscordChannelState & { visualizationTurnId?: string };
 
@@ -12,6 +13,13 @@ const discord = discordChannel({
   events: {
     async "call.settled"(event, { channel, view }) {
       const result = call(view, event.data.callId);
+      if (result?.kind === "tool" && result.name === "start_coding_thread"
+        && event.data.outcome === "completed") {
+        // Alias the thread to this session rather than starting a fresh one.
+        // Eve's sandbox is session-scoped, so follow-ups retain its workspace.
+        bindCodingThread(channel, event.data.output);
+        return;
+      }
       if (result?.kind !== "tool" || result.name !== "visualize" || event.data.outcome !== "completed") return;
       const output: unknown = event.data.output;
       if (output && typeof output === "object" && !Array.isArray(output)
@@ -31,7 +39,13 @@ const discord = discordChannel({
       const visualizationTurnId = (channel.state as VisualizationState).visualizationTurnId;
       if (visualizationTurnId && visualizationTurnId === event.scope?.turnId) return;
       // Eve now splits long messages and persists continuation aliases inside post().
-      await channel.discord.post(event.data.value);
+      const replyTo = (channel.state as CodingThreadState).codingReplyMessageId;
+      const message = replyTo ? {
+        content: event.data.value,
+        allowed_mentions: { parse: [], replied_user: false },
+        message_reference: { message_id: replyTo, fail_if_not_exists: false },
+      } : event.data.value;
+      await channel.discord.post(message);
     },
   },
 });
