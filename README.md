@@ -23,42 +23,39 @@ for daemon setup and local development.
 
 ## Self-improvement PRs
 
-Reb uses Eve's file tools and git extension to edit `robherley/reb-bot` in an isolated
-Vercel sandbox and publish draft PRs. GitHub credentials are injected at the
-network firewall rather than exposed to sandbox processes.
+Reb edits `robherley/reb-bot` in an isolated Vercel sandbox and opens draft PRs.
+GitHub credentials are injected at the network firewall, never handed to the sandbox.
 
-The `github/reb-bot` Vercel Connect connector must be attached to the deployment.
-Install its GitHub App on `robherley/reb-bot` with **Contents**, **Pull requests**,
-and **Issues** read/write, plus **Checks** and **Actions** read permissions.
-Subscribe to `issue_comment`, `pull_request_review_comment`, and `issues`;
-Connect forwards verified events to `/eve/v1/github`.
+**Setup**
 
-Edit the shared [`config.ts`](config.ts) to configure access:
+- Attach the `github/reb-bot` Vercel Connect connector to the deployment.
+- Install its GitHub App on `robherley/reb-bot` with **Contents**, **Pull requests**,
+  and **Issues** read/write, plus **Checks** and **Actions** read.
+- Subscribe to `issue_comment`, `pull_request_review_comment`, and `issues`; Connect
+  forwards verified events to `/eve/v1/github`.
+- Configure access in [`config.ts`](config.ts): `developers` holds `{ github, discord }`
+  pairs linking each person's GitHub login to their numeric Discord ID. An empty
+  array disables publishing.
 
-| Setting | Value |
-| --- | --- |
-| `developers` | Array of `{ github, discord }` entries pairing each developer's GitHub login and numeric Discord user ID; an empty array disables publishing |
+Both accounts resolve to the same developer, and Eve credits that GitHub user via
+its noreply address in PR descriptions and signed commits.
 
-Both accounts resolve to the same developer. Eve credits the linked GitHub user
-in new PR descriptions and signed-commit messages, including work requested from
-Discord, using the account's GitHub noreply email address.
+**Using it**
 
-Ask reb in Discord to implement a change, or mention `@reb-bot` in a GitHub issue
-or PR comment. New issues opened by an allowed GitHub user also start a turn.
-For Discord coding requests, reb first opens a thread and posts its plan before
-starting the sandbox. The thread continues the same Eve session, so follow-up
-messages reuse its workspace and sandbox lifecycle. The bot needs **Create Public
-Threads** and **Send Messages in Threads** permissions. Include these in the
-Discord application's default install permissions; existing servers may need role
-or channel permission updates. If threads are unavailable, reb replies in the
-original channel and keeps the same session.
+Ask reb in Discord, mention `@reb-bot` in a GitHub issue or PR comment, or open an
+issue as an allowed user. Discord requests open a thread with a short plan first,
+and follow-ups continue the same session and sandbox. That needs **Create Public
+Threads** and **Send Messages in Threads** permissions; add them to the app's default
+install, since existing servers may need a role or channel tweak. Without threads,
+reb answers in the channel instead.
+
 Reb branches from current main, installs dependencies, edits and checks the code,
-then returns a draft PR link. Review comments can request updates or CI fixes on
-the same branch. Merging stays with the maintainer.
+then returns a draft PR link. Review comments continue on the same branch; merging
+stays with the maintainer.
 
-For a new environment, run `npx eve add channel/github --skip-install` to configure
-Connect without replacing the customized channel. Attach the connector to any
-additional Vercel environments used for testing.
+For a new environment, run `npx eve add channel/github --skip-install` so the
+customized channel survives, then attach the connector to any extra Vercel
+environments.
 
 ## Registering Commands
 
