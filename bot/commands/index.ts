@@ -7,6 +7,7 @@ import minecraft from "./minecraft.js";
 import http from "./http.js";
 import githubStatus from "./github-status.js";
 import ppi from "./ppi.js";
+import figlet from "./figlet.js";
 
 interface Command {
   definition: SlashCommandDefinition;
@@ -21,6 +22,7 @@ const allCommands: Command[] = [
   http,
   githubStatus,
   ppi,
+  figlet,
 ];
 
 export const handlers = new Map<string, CommandHandler>(
