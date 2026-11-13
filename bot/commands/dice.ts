@@ -3,8 +3,8 @@ import { CommandOptionType, cmd } from "../types.js";
 
 export default cmd(
   {
-    name: "random",
-    description: "Roll a random integer in a range",
+    name: "dice",
+    description: "Roll a random number",
     options: [
       {
         name: "min",
