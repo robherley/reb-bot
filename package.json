@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@vercel/connect": "^2.9.2",
     "ai": "^7.0.148",
     "dejavu-fonts-ttf": "^2.37.3",
     "discord-interactions": "^4.4.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^24.19.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vercel": "^65.15.0"
   }
 }

@@ -62,6 +62,7 @@ export const discordGatewayRoute = POST<DiscordChannelState>(
           channel_id: message.channelId,
           guild_id: message.guildId,
           user_id: message.userId,
+          message_id: message.id,
         },
       },
       context: [
