@@ -40,3 +40,4 @@ npm run register
 | `/http` | HTTP status code image (cat or dog) |
 | `/github-status` | GitHub component status |
 | `/ppi` | Calculate pixels per inch |
+| `/random` | Roll a random integer in a range |
