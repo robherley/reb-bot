@@ -1,5 +1,11 @@
 import type { Message } from "discord.js";
 
+interface GatewayAttachmentSource {
+  url: string;
+  name: string;
+  contentType: string | null;
+}
+
 export interface GatewayMessage {
   id: string;
   channelId: string;
@@ -8,6 +14,14 @@ export interface GatewayMessage {
   author: { id: string; bot: boolean };
   channel: { isThread(): boolean };
   content: string;
+  /** discord.js collections iterate entries, so read the values instead. */
+  attachments?: { values(): Iterable<GatewayAttachmentSource> };
+}
+
+export interface GatewayAttachment {
+  url: string;
+  mediaType: string;
+  filename: string;
 }
 
 export interface MessagePayload {
@@ -20,10 +34,41 @@ export interface MessagePayload {
   applicationId: string;
   isThread: boolean;
   content: string;
+  attachments: GatewayAttachment[];
 }
+
+/** Discord serves message attachments from these hosts over signed HTTPS URLs. */
+const ATTACHMENT_HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net"]);
+
+/** Discord allows at most ten attachments on a message. */
+export const MAX_ATTACHMENTS = 10;
 
 export function isHumanMessage(message: GatewayMessage): boolean {
   return Boolean(message.guildId && !message.author.bot && !message.webhookId);
+}
+
+/**
+ * Keeps only attachments the agent's Discord channel can fetch, so an
+ * unsupported URL never reaches the model as a dangling file part.
+ */
+export function messageAttachments(message: Pick<GatewayMessage, "attachments">): GatewayAttachment[] {
+  const attachments: GatewayAttachment[] = [];
+  for (const attachment of message.attachments?.values() ?? []) {
+    if (attachments.length >= MAX_ATTACHMENTS) break;
+    let url: URL | null;
+    try {
+      url = new URL(attachment.url);
+    } catch {
+      continue;
+    }
+    if (url.protocol !== "https:" || !ATTACHMENT_HOSTS.has(url.hostname)) continue;
+    attachments.push({
+      url: url.href,
+      mediaType: attachment.contentType || "application/octet-stream",
+      filename: attachment.name,
+    });
+  }
+  return attachments;
 }
 
 export async function resolveBotReply(message: Message, botId: string): Promise<string | undefined> {
@@ -51,7 +96,9 @@ export function messagePayload(
   if (!mentioned && !isThread && !replyToBotMessageId) return null;
 
   const content = message.content.replaceAll(mention, "").replaceAll(nickMention, "").trim();
-  if (!content) return null;
+  // An attachment-only message still asks something, so it isn't empty to us.
+  const attachments = messageAttachments(message);
+  if (!content && attachments.length === 0) return null;
 
   return {
     id: message.id,
@@ -63,5 +110,6 @@ export function messagePayload(
     isThread,
     replyToBotMessageId,
     content,
+    attachments,
   };
 }

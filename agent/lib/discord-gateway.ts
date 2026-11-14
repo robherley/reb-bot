@@ -1,9 +1,14 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { POST } from "eve/channels";
+import { POST, type MessageContent } from "eve/channels";
 import { discordContinuationToken, type DiscordChannelState } from "eve/channels/discord";
 import { z } from "zod";
 
 const snowflake = z.string().regex(/^\d{17,20}$/);
+const attachmentSchema = z.object({
+  url: z.url({ protocol: /^https$/ }),
+  mediaType: z.string().min(1).max(255),
+  filename: z.string().min(1).max(255),
+});
 const messageSchema = z.object({
   id: snowflake,
   channelId: snowflake,
@@ -13,8 +18,29 @@ const messageSchema = z.object({
   isThread: z.boolean(),
   mentioned: z.boolean().default(true),
   replyToBotMessageId: snowflake.optional(),
-  content: z.string().trim().min(1).max(4000),
+  content: z.string().trim().max(4000).default(""),
+  attachments: z.array(attachmentSchema).max(10).default([]),
+}).refine((message) => Boolean(message.content) || message.attachments.length > 0, {
+  message: "A message needs text or an attachment",
 });
+
+/**
+ * Text plus one file part per attachment. The channel's `fetchFile` downloads
+ * Discord's signed CDN URLs into the session sandbox, where images reach the
+ * model as bytes and other files reach it as a readable path.
+ */
+export function messageContent(message: z.infer<typeof messageSchema>): MessageContent {
+  if (message.attachments.length === 0) return message.content;
+  return [
+    ...(message.content ? [{ type: "text" as const, text: message.content }] : []),
+    ...message.attachments.map((attachment) => ({
+      type: "file" as const,
+      data: new URL(attachment.url),
+      mediaType: attachment.mediaType,
+      filename: attachment.filename,
+    })),
+  ];
+}
 
 function digest(value: string) {
   return createHash("sha256").update(value).digest();
@@ -50,7 +76,7 @@ export const discordGatewayRoute = POST<DiscordChannelState>(
       // Don't start AI conversations in unrelated threads or on legacy slash-command replies.
       return new Response(null, { status: 204 });
     }
-    const session = await from(address).send(message.content, {
+    const session = await from(address).send(messageContent(message), {
       idempotencyKey: `discord:message:${message.id}`,
       auth: {
         // Match defaultDiscordAuth so native approval buttons recognize the requester.
