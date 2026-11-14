@@ -16,6 +16,7 @@ export default cmd(
     ],
   },
   async ({ number: num }) => {
+
     try {
       if (num == null) {
         const latest = (await fetch("https://xkcd.com/info.0.json").then((r) =>
@@ -26,6 +27,7 @@ export default cmd(
 
       const comic = (await fetch(`https://xkcd.com/${num}/info.0.json`).then(
         (r) => {
+
           if (!r.ok) throw new Error(`Comic ${num} not found`);
           return r.json();
         },

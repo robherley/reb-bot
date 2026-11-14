@@ -6,6 +6,7 @@ import { bindCodingThread, startCodingThread } from "../agent/lib/coding-thread.
 import { config } from "../config.js";
 
 test("coding threads post the plan immediately, reuse threads, and retain session routing", async (t) => {
+
   const oldToken = process.env.DISCORD_BOT_TOKEN;
   const oldGuild = process.env.DISCORD_GUILD_ID;
   const oldDevelopers = config.developers;
@@ -13,6 +14,7 @@ test("coding threads post the plan immediately, reuse threads, and retain sessio
   delete process.env.DISCORD_GUILD_ID;
   config.developers = [{ github: "example", discord: "42" }];
   t.after(() => {
+
     config.developers = oldDevelopers;
     for (const [name, value] of Object.entries({ DISCORD_BOT_TOKEN: oldToken, DISCORD_GUILD_ID: oldGuild })) {
       if (value === undefined) delete process.env[name];
@@ -27,6 +29,7 @@ test("coding threads post the plan immediately, reuse threads, and retain sessio
   const calls: { path: string; method: string; body: Record<string, unknown> }[] = [];
   let created = false;
   const request: typeof fetch = async (url, options) => {
+
     const path = new URL(String(url)).pathname.replace("/api/v10", "");
     const method = options?.method ?? "GET";
     const body = options?.body ? JSON.parse(String(options.body)) : {};
@@ -65,6 +68,7 @@ test("coding threads post the plan immediately, reuse threads, and retain sessio
   created = false;
   let fallbackPosts = 0;
   const noThreads: typeof fetch = async (url, options) => {
+
     const path = new URL(String(url)).pathname;
     if (path.endsWith("/threads")) return new Response(null, { status: 403 });
     if (path.endsWith("/channels/10/messages") && options?.method === "POST") {
@@ -91,13 +95,17 @@ test("coding threads post the plan immediately, reuse threads, and retain sessio
   // A thread exists but the bot cannot send messages there.
   created = true;
   const noThreadMessages: typeof fetch = async (url, options) => {
+
     if (String(url).endsWith("/channels/30/messages")) return new Response(null, { status: 403 });
     return noThreads(url, options);
   };
   assert.equal((await startCodingThread(auth, plan, noThreadMessages)).threadId, null);
   assert.equal(fallbackPosts, 2);
 
-  const neverFetch: typeof fetch = async () => { throw new Error("must not fetch"); };
+  const neverFetch: typeof fetch = async () => {
+
+    throw new Error("must not fetch");
+  };
   await assert.rejects(startCodingThread(null, plan, neverFetch), /authorized Discord developer/);
   await assert.rejects(startCodingThread({ ...auth, principalId: "discord:1:99" }, plan, neverFetch), /authorized Discord developer/);
   await assert.rejects(startCodingThread(auth, plan, async () => new Response(null, { status: 403 })), /403/);

@@ -7,6 +7,7 @@ export const SELF_REPOSITORY = "robherley/reb-bot";
 export const GITHUB_CONNECTOR = "github/reb-bot";
 
 export function developerFor(auth: SessionAuthContext | null) {
+
   if (!auth || auth.principalType !== "user") return null;
   if (auth.authenticator === "discord-interaction") {
     const guild = auth.attributes.guild_id;
@@ -26,6 +27,7 @@ export function developerFor(auth: SessionAuthContext | null) {
 }
 
 export function canImproveSelf(auth: SessionAuthContext | null): boolean {
+
   return developerFor(auth) !== null;
 }
 
@@ -33,6 +35,7 @@ export async function coAuthorFor(
   auth: SessionAuthContext | null,
   request: typeof fetch = fetch,
 ): Promise<GitHubCoAuthor | null> {
+
   const developer = developerFor(auth);
   if (!developer) return null;
 
@@ -53,12 +56,14 @@ export async function coAuthorFor(
 }
 
 export function authorizeGitHub(request: GitHubAppAuthorizeRequest): boolean {
+
   return request.repository?.toLowerCase() === SELF_REPOSITORY && canImproveSelf(request.auth);
 }
 
 // The base policy allows public network access. Add credentials only for the
 // duration of Eve's serialized GitHub command lease, then restore that policy.
 export const brokerGitHubLease: GitHubLeaseBroker = async (sandbox, rules) => {
+
   if (!("setNetworkPolicy" in sandbox) || typeof sandbox.setNetworkPolicy !== "function") {
     throw new Error("GitHub commands require a firewall-capable sandbox");
   }

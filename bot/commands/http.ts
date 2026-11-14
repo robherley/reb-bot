@@ -25,6 +25,7 @@ export default cmd(
     ],
   },
   async ({ code, animal }) => {
+
     const url =
       animal === "dog"
         ? `https://http.dog/${code}.jpg`

@@ -6,6 +6,7 @@ import { isHumanMessage, messagePayload, resolveBotReply } from "./messages.ts";
 const SHUTDOWN_TIMEOUT_MS = 25_000;
 
 export async function startGateway(config: GatewayConfig): Promise<void> {
+
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -18,6 +19,7 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   let stopping = false;
 
   async function handleMessage(message: Message, botId: string): Promise<void> {
+
     const replyId = await resolveBotReply(message, botId);
     const payload = messagePayload(message, botId, replyId);
     if (!payload) return;
@@ -31,11 +33,13 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   }
 
   function onMessage(message: Message): void {
+
     if (stopping || !client.user || !isHumanMessage(message)) return;
     if (config.guildId && message.guildId !== config.guildId) return;
 
     const task = handleMessage(message, client.user.id)
       .catch((error: unknown) => {
+
         const detail = error instanceof Error ? error.message : "unknown error";
         console.error(`Failed forwarding Discord message ${message.id}: ${detail}`);
       })
@@ -45,6 +49,7 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   }
 
   async function stop(): Promise<void> {
+
     if (stopping) return;
     stopping = true;
     console.log(`Stopping Discord Gateway; draining ${pending.size} deliveries`);
@@ -59,6 +64,7 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   }
 
   client.once(Events.ClientReady, (ready) => {
+
     console.log(`Discord Gateway connected as ${ready.user.tag}`);
   });
   client.on(Events.Error, () => console.error("Discord client error"));

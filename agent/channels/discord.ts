@@ -12,6 +12,7 @@ const discord = discordChannel({
   route: "/api/interactions",
   events: {
     async "call.settled"(event, { channel, view }) {
+
       const result = call(view, event.data.callId);
       if (result?.kind === "tool" && result.name === "start_coding_thread"
         && event.data.outcome === "completed") {
@@ -34,6 +35,7 @@ const discord = discordChannel({
       }
     },
     async "content.completed"(event, { channel }) {
+
       if (event.data.kind !== "text" || event.data.phase !== "reply"
         || typeof event.data.value !== "string" || !event.data.value) return;
       const visualizationTurnId = (channel.state as VisualizationState).visualizationTurnId;
@@ -57,6 +59,7 @@ export default {
   ...discord,
   routes: [
     POST<DiscordChannelState>("/api/interactions", async (request, args) => {
+
       const body = await request.clone().json().catch(() => null);
       if (!body || typeof body !== "object" || !("type" in body)) return new Response("Invalid interaction", { status: 400 });
       // Both handlers verify the original signature before dispatch.

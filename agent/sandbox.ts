@@ -4,6 +4,7 @@ import { installCodeTooling } from "eve/extensions/code/sandbox";
 
 export const environment = VercelSandbox.environment({
   prepare: async (sandbox) => {
+
     await installCodeTooling(sandbox);
   },
 });

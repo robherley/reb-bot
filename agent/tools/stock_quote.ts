@@ -10,7 +10,9 @@ export default defineTool({
       .describe("Ticker symbols, e.g. AAPL, MSFT, BRK-B, 0700.HK, or ^GSPC."),
   }),
   async execute({ symbols }) {
+
     const quotes = await Promise.all(symbols.map(async (ticker) => {
+
       let symbol: string;
       try {
         symbol = normalizeTicker(ticker);

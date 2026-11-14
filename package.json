@@ -8,6 +8,8 @@
     "dev": "eve dev",
     "start": "eve start",
     "typecheck": "tsc",
+    "lint": "node --import tsx/esm scripts/function-padding.ts",
+    "lint:fix": "node --import tsx/esm scripts/function-padding.ts --fix",
     "test": "node --import tsx/esm --test tests/*.test.ts",
     "gateway": "node --env-file=.env.local gateway/index.ts",
     "register": "node --env-file=.env --import tsx/esm --input-type=module -e 'import { registerCommands } from \"./bot/register.ts\"; await registerCommands();'"
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
+    "oxc-parser": "^0.121.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vercel": "^65.15.0"

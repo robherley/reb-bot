@@ -26,6 +26,7 @@ export default cmd(
     description: "Returns GitHub status",
   },
   async () => {
+
     try {
       const data = (await fetch(
         "https://www.githubstatus.com/api/v2/summary.json",

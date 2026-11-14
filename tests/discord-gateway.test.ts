@@ -16,11 +16,13 @@ const previousSecret = process.env.DISCORD_GATEWAY_SECRET;
 const previousGuild = process.env.DISCORD_GUILD_ID;
 
 beforeEach(() => {
+
   process.env.DISCORD_GATEWAY_SECRET = "test-secret";
   delete process.env.DISCORD_GUILD_ID;
 });
 
 afterEach(() => {
+
   for (const [key, value] of Object.entries({
     DISCORD_GATEWAY_SECRET: previousSecret,
     DISCORD_GUILD_ID: previousGuild,
@@ -31,6 +33,7 @@ afterEach(() => {
 });
 
 function request(body: typeof message & { replyToBotMessageId?: string } = message, secret = "test-secret") {
+
   return new Request("https://example.com/api/discord/gateway", {
     method: "POST",
     headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
@@ -39,12 +42,14 @@ function request(body: typeof message & { replyToBotMessageId?: string } = messa
 }
 
 function harness(existing: string[] = []) {
+
   type SendOptions = { auth: { principalId: string }; state: Record<string, unknown> };
   const sent: { address: string; content: unknown; options: SendOptions }[] = [];
   const args = {
     resolveSession: async (address: string) => existing.includes(address) ? {} : null,
     from: (address: string) => ({
       send: async (content: unknown, options: SendOptions) => {
+
         sent.push({ address, content, options });
         return { sessionId: "eve-session" };
       },
@@ -54,6 +59,7 @@ function harness(existing: string[] = []) {
 }
 
 test("rejects invalid gateway credentials before dispatch", async () => {
+
   const { args, sent } = harness();
   const response = await discordGatewayRoute.handler(request(message, "wrong"), args);
   assert.equal(response.status, 401);
@@ -61,6 +67,7 @@ test("rejects invalid gateway credentials before dispatch", async () => {
 });
 
 test("dispatches using Eve's new continuation and delivery APIs", async () => {
+
   const { args, sent } = harness();
   const response = await discordGatewayRoute.handler(request(), args);
   assert.equal(response.status, 202);
@@ -78,6 +85,7 @@ test("dispatches using Eve's new continuation and delivery APIs", async () => {
 });
 
 test("continues an existing session when replying to a bot message", async () => {
+
   const replyToBotMessageId = "100000000000000006";
   const address = `${message.channelId}:${replyToBotMessageId}`;
   const { args, sent } = harness([address]);
@@ -87,6 +95,7 @@ test("continues an existing session when replying to a bot message", async () =>
 });
 
 test("ignores unmentioned messages without an existing session", async () => {
+
   const { args, sent } = harness();
   const response = await discordGatewayRoute.handler(request({ ...message, mentioned: false, isThread: true }), args);
   assert.equal(response.status, 204);
@@ -94,6 +103,7 @@ test("ignores unmentioned messages without an existing session", async () => {
 });
 
 test("rejects messages from a disallowed guild", async () => {
+
   process.env.DISCORD_GUILD_ID = "100000000000000099";
   const { args, sent } = harness();
   const response = await discordGatewayRoute.handler(request(), args);

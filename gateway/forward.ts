@@ -6,6 +6,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RETRY_DELAY_MS = 30_000;
 
 export function retryDelay(value: string | null, now = Date.now()): number {
+
   if (!value) return 0;
   const seconds = Number(value);
   if (Number.isFinite(seconds)) return Math.min(MAX_RETRY_DELAY_MS, Math.max(0, seconds * 1000));
@@ -23,10 +24,12 @@ interface ForwardOptions {
 }
 
 async function waitForRetry(delay: number, signal: AbortSignal): Promise<void> {
+
   await sleep(delay, undefined, { signal });
 }
 
 export async function forwardMessage(payload: MessagePayload, options: ForwardOptions): Promise<void> {
+
   const { url, secret, bypassSecret, signal, fetchImpl = fetch, sleepImpl = waitForRetry } = options;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {

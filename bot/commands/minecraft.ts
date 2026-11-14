@@ -19,6 +19,7 @@ export default cmd(
     ],
   },
   async ({ server: serverName }) => {
+
     const server = SERVERS.find((s) => s.name === serverName);
     if (!server) {
       return {

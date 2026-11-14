@@ -8,10 +8,12 @@ import { authorizeGitHub, brokerGitHubLease, canImproveSelf, coAuthorFor, develo
 import { config } from "../config.js";
 
 test("GitHub publishing requires an authorized caller and the exact repository", async (t) => {
+
   const previous = { ...config };
   const previousGuild = process.env.DISCORD_GUILD_ID;
   delete process.env.DISCORD_GUILD_ID;
   t.after(() => {
+
     Object.assign(config, previous);
     if (previousGuild === undefined) delete process.env.DISCORD_GUILD_ID;
     else process.env.DISCORD_GUILD_ID = previousGuild;
@@ -36,6 +38,7 @@ test("GitHub publishing requires an authorized caller and the exact repository",
   assert.equal(authorizeGitHub(request(github, "robherley/reb-bot")), true);
   assert.equal(developerFor(discord), developerFor(github));
   const lookup: typeof fetch = async (url) => {
+
     assert.equal(url, "https://api.github.com/users/robherley");
     return Response.json({ id: 123, login: "robherley" });
   };
@@ -50,7 +53,10 @@ test("GitHub publishing requires an authorized caller and the exact repository",
     id: 999, login: "someone-else",
   })), /unexpected account/);
   await assert.rejects(coAuthorFor(discord, async () => new Response(null, { status: 403 })), /lookup failed/);
-  assert.equal(await coAuthorFor(null, async () => { throw new Error("must not fetch"); }), null);
+  assert.equal(await coAuthorFor(null, async () => {
+
+    throw new Error("must not fetch");
+  }), null);
   assert.equal(authorizeGitHub(request(discord, null)), false);
   assert.equal(authorizeGitHub(request(discord, "robherley/other")), false);
   assert.equal(authorizeGitHub(request(null, "robherley/reb-bot")), false);
@@ -75,9 +81,13 @@ test("GitHub publishing requires an authorized caller and the exact repository",
 });
 
 test("GitHub credential leases preserve public access and remove credentials afterward", async () => {
+
   const policies: SandboxNetworkPolicy[] = [];
   const sandbox = {
-    setNetworkPolicy: async (policy: SandboxNetworkPolicy) => { policies.push(policy); },
+    setNetworkPolicy: async (policy: SandboxNetworkPolicy) => {
+
+      policies.push(policy);
+    },
   } as VercelSandboxSession;
   const rules = { "api.github.com": [{ transform: [{ headers: { authorization: "test-token" } }] }] };
   await brokerGitHubLease(sandbox, rules);

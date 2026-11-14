@@ -5,6 +5,7 @@ export default defineTool({
   description: "Render a bar/line chart or a small flow diagram as a PNG and send it with an explanation in the current Discord channel. Use real supplied/retrieved data; label illustrative data explicitly. Diagram nodes are laid out in input order, two per row; prefer short labels and adjacent edges. The image is already sent by this tool; do not send it again.",
   inputSchema: visualizationSchema,
   async execute(input, ctx) {
+
     const auth = ctx.session.auth.current;
     const channelId = auth?.attributes.channel_id;
     if (!auth?.authenticator.startsWith("discord") || typeof channelId !== "string" || !/^\d+$/.test(channelId)) {

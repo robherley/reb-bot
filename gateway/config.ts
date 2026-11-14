@@ -7,7 +7,9 @@ export interface GatewayConfig {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig {
+
   function required(name: string): string {
+
     const value = env[name];
     if (!value) throw new Error(`${name} must be set`);
     return value;
@@ -23,6 +25,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
 }
 
 export function gatewayUrl(origin: string): URL {
+
   const url = new URL(origin);
   const secure = url.protocol === "https:";
   const local = url.protocol === "http:" && url.hostname === "localhost";

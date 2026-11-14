@@ -31,6 +31,7 @@ export default cmd(
     ],
   },
   async ({ width, height, diagonal }) => {
+
     const ppi = Math.sqrt(width * width + height * height) / diagonal;
 
     const rows = [

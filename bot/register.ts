@@ -8,6 +8,7 @@ interface RegisteredCommand {
 export async function registerCommands(
   token = process.env.DISCORD_BOT_TOKEN ?? process.env.DISCORD_TOKEN,
 ): Promise<RegisteredCommand[]> {
+
   if (!token) throw new Error("DISCORD_BOT_TOKEN must be set");
 
   const headers = {

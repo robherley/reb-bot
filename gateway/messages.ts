@@ -23,10 +23,12 @@ export interface MessagePayload {
 }
 
 export function isHumanMessage(message: GatewayMessage): boolean {
+
   return Boolean(message.guildId && !message.author.bot && !message.webhookId);
 }
 
 export async function resolveBotReply(message: Message, botId: string): Promise<string | undefined> {
+
   if (!message.reference?.messageId) return undefined;
 
   const referenced = await message.fetchReference().catch(() => null);
@@ -42,6 +44,7 @@ export function messagePayload(
   botId: string,
   replyToBotMessageId?: string,
 ): MessagePayload | null {
+
   if (!isHumanMessage(message) || !message.guildId) return null;
 
   const mention = `<@${botId}>`;

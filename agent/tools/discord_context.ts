@@ -24,16 +24,19 @@ const inputSchema = z.object({
 type JsonRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): JsonRecord | null {
+
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as JsonRecord)
     : null;
 }
 
 function asString(value: unknown): string | null {
+
   return typeof value === "string" ? value : null;
 }
 
 function discordScope(ctx: ToolContext) {
+
   const auth = ctx.session.auth.current;
   if (!auth?.authenticator.startsWith("discord")) {
     throw new Error("Discord context is only available in Discord sessions.");
@@ -52,6 +55,7 @@ function discordScope(ctx: ToolContext) {
 }
 
 async function discordGet(path: string, signal: AbortSignal): Promise<unknown> {
+
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) {
     throw new Error("Discord bot access is not configured.");
@@ -68,6 +72,7 @@ async function discordGet(path: string, signal: AbortSignal): Promise<unknown> {
 }
 
 function formatMessage(value: unknown) {
+
   const message = asRecord(value);
   const author = asRecord(message?.author);
   if (!message || !author) return null;
@@ -83,6 +88,7 @@ function formatMessage(value: unknown) {
 }
 
 async function recentMessages(channelId: string, limit: number, signal: AbortSignal) {
+
   const data = await discordGet(
     `/channels/${encodeURIComponent(channelId)}/messages?limit=${limit}`,
     signal,
@@ -95,6 +101,7 @@ export default defineTool({
     "Read bounded Discord context from the invoking channel or guild. Use only for questions that depend on recent messages, server history, members, or roles.",
   inputSchema,
   async execute(input, ctx) {
+
     const { channelId, guildId } = discordScope(ctx);
 
     if (input.operation === "recent_messages") {
@@ -129,6 +136,7 @@ export default defineTool({
       const matches = (
         await Promise.all(
           channels.map(async (channel) => {
+
             const id = asString(channel?.id);
             if (!id) return [];
             try {
@@ -164,6 +172,7 @@ export default defineTool({
         ? rawRoles
             .map(asRecord)
             .flatMap((role): [string, string][] => {
+
               const id = asString(role?.id);
               const name = asString(role?.name);
               return id && name ? [[id, name]] : [];
@@ -172,10 +181,12 @@ export default defineTool({
     );
     const members = Array.isArray(rawMembers)
       ? rawMembers.map(asRecord).flatMap((member) => {
+
           const user = asRecord(member?.user);
           if (!member || !user) return [];
           const roles = Array.isArray(member.roles)
             ? member.roles.flatMap((role) => {
+
                 const name = roleNames.get(String(role));
                 return name ? [name] : [];
               })

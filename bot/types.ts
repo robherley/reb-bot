@@ -93,9 +93,11 @@ export function cmd<const D extends SlashCommandDefinition>(
     interaction: Interaction,
   ) => Promise<InteractionResponse>,
 ): { definition: SlashCommandDefinition; handler: CommandHandler } {
+
   return {
     definition,
     handler: async (interaction) => {
+
       const options: Record<string, unknown> = {};
       if (definition.options) {
         for (const opt of definition.options) {

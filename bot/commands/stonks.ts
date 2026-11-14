@@ -6,11 +6,13 @@ const fmt = (n: number | undefined, decimals = 2) =>
   n != null ? n.toFixed(decimals) : "N/A";
 
 const fmtPrice = (price: number | undefined, changePct: number | undefined) => {
+
   const s = changePct != null && changePct >= 0 ? "+" : "";
   return `\`$${fmt(price)} (${s}${fmt(changePct)}%)\``;
 };
 
 const fmtLarge = (n: number | undefined) => {
+
   if (n == null) return "N/A";
   if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
@@ -38,6 +40,7 @@ export default cmd(
     ],
   },
   async ({ ticker, extended }) => {
+
     let symbol: string;
     try {
       symbol = normalizeTicker(ticker);
@@ -64,6 +67,7 @@ export default cmd(
     const ahChange = quote.postMarketChange ?? 0;
 
     const stonksLabel = (c: number) => {
+
       const emoji = c >= 0 ? "📈" : "📉";
       const not = c >= 0 ? "" : "not ";
       return `is ${not}stonks ${emoji}`;

@@ -7,6 +7,7 @@ export default cmd(
     description: "Give reb-bot a ping, maybe you'll get a pong",
   },
   async (_options, interaction) => {
+
     const user = interaction.member?.user ?? interaction.user;
     const version = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
     return {

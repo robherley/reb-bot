@@ -31,6 +31,7 @@ const text = (x: number, y: number, value: string, size = 18, anchor = "start") 
   `<text x="${x}" y="${y}" font-size="${size}" text-anchor="${anchor}" fill="#edf2fa">${escape(value)}</text>`;
 
 export function renderVisualization(input: Visualization): Buffer {
+
   const { visual } = visualizationSchema.parse(input);
   const parts = [text(40, 50, input.title, Math.min(26, 1500 / input.title.length))];
   if (visual.kind === "diagram") {
@@ -77,6 +78,7 @@ export function renderVisualization(input: Visualization): Buffer {
     parts.push(`<path d="M140,${y(0)} H980" stroke="#edf2fa"/>`);
     visual.labels.forEach((name, i) => parts.push(`<g transform="translate(${x(i)},575) rotate(25)">${text(0, 0, name, 12)}</g>`));
     visual.series.forEach((series, s) => {
+
       const color = colors[s];
       parts.push(`<rect x="${140 + s * 215}" y="115" width="12" height="12" fill="${color}"/>`, text(158 + s * 215, 127, series.name, 13));
       if (visual.kind === "line") {

@@ -17,12 +17,14 @@ const messageSchema = z.object({
 });
 
 function digest(value: string) {
+
   return createHash("sha256").update(value).digest();
 }
 
 export const discordGatewayRoute = POST<DiscordChannelState>(
   "/api/discord/gateway",
   async (request, { from, resolveSession }) => {
+
     const secret = process.env.DISCORD_GATEWAY_SECRET;
     if (!secret) return new Response("Gateway not configured", { status: 503 });
 

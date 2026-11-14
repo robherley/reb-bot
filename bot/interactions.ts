@@ -8,6 +8,7 @@ import type { Interaction } from "./types.js";
 
 export default {
   async fetch(req: Request) {
+
     if (req.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405 });
     }

@@ -14,6 +14,7 @@ export const codingThreadResult = z.object({
 });
 
 export function bindCodingThread(channel: DiscordEventContext, output: unknown): boolean {
+
   const parsed = codingThreadResult.safeParse(output);
   if (!parsed.success) return false;
   const { threadId, conversationId, messageId, sourceChannelId } = parsed.data;
@@ -32,6 +33,7 @@ export async function startCodingThread(
   input: { title: string; plan: string },
   request: typeof fetch = fetch,
 ) {
+
   if (!canImproveSelf(auth) || auth?.authenticator !== "discord-interaction") {
     throw new Error("Coding threads require an authorized Discord developer.");
   }
@@ -44,6 +46,7 @@ export async function startCodingThread(
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) throw new Error("Discord bot access is not configured.");
   async function api(path: string, method = "GET", body?: unknown): Promise<Record<string, unknown>> {
+
     const response = await request(`https://discord.com/api/v10${path}`, {
       method,
       headers: { authorization: `Bot ${token}`, "content-type": "application/json" },
@@ -62,6 +65,7 @@ export async function startCodingThread(
     }
     const path = `/channels/${channelId}/messages/${sourceMessageId}`;
     const existingThread = async () => {
+
       const message = await api(path);
       const thread = message.thread as { id?: unknown } | undefined;
       return typeof thread?.id === "string" ? thread.id : undefined;
