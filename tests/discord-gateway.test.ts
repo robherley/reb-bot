@@ -30,7 +30,10 @@ afterEach(() => {
   }
 });
 
-function request(body: typeof message & { replyToBotMessageId?: string } = message, secret = "test-secret") {
+function request(
+  body: Record<string, unknown> = message,
+  secret = "test-secret",
+) {
   return new Request("https://example.com/api/discord/gateway", {
     method: "POST",
     headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
@@ -126,6 +129,49 @@ test("dispatches attachment-only messages without inventing text", async () => {
   assert.equal(response.status, 202);
   const content = sent[0]?.content as { type: string }[];
   assert.deepEqual(content.map((part) => part.type), ["file"]);
+});
+
+test("forwards the replied-to message's text and attachments", async () => {
+  const { args, sent } = harness();
+  const replyTo = {
+    id: "100000000000000009",
+    authorId: "100000000000000010",
+    authorIsBot: false,
+    content: "check out this deal https://store.ui.com/us/en/tags/black-friday",
+    attachments: [attachment],
+  };
+  const response = await discordGatewayRoute.handler(
+    request({ ...message, content: "is this a sweet deal?", replyTo }),
+    args,
+  );
+  assert.equal(response.status, 202);
+  const content = sent[0]?.content as { type: string; text?: string; filename?: string; data?: URL }[];
+  assert.deepEqual(content.map((part) => part.type), ["text", "file", "text"]);
+  assert.match(content[0]?.text ?? "", /check out this deal/);
+  assert.match(content[0]?.text ?? "", /100000000000000010/);
+  assert.equal(content[1]?.filename, "photo.png");
+  assert.equal(content[1]?.data?.hostname, "cdn.discordapp.com");
+  assert.equal(content[2]?.text, "is this a sweet deal?");
+});
+
+test("forwards reply context for a bot-authored message and keeps its session", async () => {
+  const replyTo = {
+    id: "100000000000000006",
+    authorId: message.applicationId,
+    authorIsBot: true,
+    content: "here are the deals",
+    attachments: [],
+  };
+  const { args, sent } = harness([`${message.channelId}:${replyTo.id}`]);
+  const response = await discordGatewayRoute.handler(
+    request({ ...message, content: "and this?", replyToBotMessageId: replyTo.id, replyTo }),
+    args,
+  );
+  assert.equal(response.status, 202);
+  assert.equal(sent[0]?.address, `${message.channelId}:${replyTo.id}`);
+  const content = sent[0]?.content as { type: string; text?: string }[];
+  assert.match(content[0]?.text ?? "", /the bot/);
+  assert.equal(content[1]?.text, "and this?");
 });
 
 test("rejects messages with neither text nor attachments", async () => {
