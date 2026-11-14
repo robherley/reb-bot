@@ -100,3 +100,37 @@ test("rejects messages from a disallowed guild", async () => {
   assert.equal(response.status, 403);
   assert.equal(sent.length, 0);
 });
+
+const attachment = {
+  url: "https://cdn.discordapp.com/attachments/100000000000000002/100000000000000007/photo.png?ex=1&is=2&hm=3",
+  mediaType: "image/png",
+  filename: "photo.png",
+};
+
+test("forwards image attachments as file parts next to the text", async () => {
+  const { args, sent } = harness();
+  const response = await discordGatewayRoute.handler(request({ ...message, attachments: [attachment] }), args);
+  assert.equal(response.status, 202);
+  const content = sent[0]?.content as { type: string; text?: string; data?: URL; mediaType?: string; filename?: string }[];
+  assert.equal(content[0]?.type, "text");
+  assert.equal(content[0]?.text, "hello");
+  assert.equal(content[1]?.type, "file");
+  assert.equal(content[1]?.mediaType, "image/png");
+  assert.equal(content[1]?.filename, "photo.png");
+  assert.equal(content[1]?.data?.hostname, "cdn.discordapp.com");
+});
+
+test("dispatches attachment-only messages without inventing text", async () => {
+  const { args, sent } = harness();
+  const response = await discordGatewayRoute.handler(request({ ...message, content: "", attachments: [attachment] }), args);
+  assert.equal(response.status, 202);
+  const content = sent[0]?.content as { type: string }[];
+  assert.deepEqual(content.map((part) => part.type), ["file"]);
+});
+
+test("rejects messages with neither text nor attachments", async () => {
+  const { args, sent } = harness();
+  const response = await discordGatewayRoute.handler(request({ ...message, content: "" }), args);
+  assert.equal(response.status, 400);
+  assert.equal(sent.length, 0);
+});
