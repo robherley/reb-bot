@@ -24,9 +24,22 @@ export interface GatewayAttachment {
   filename: string;
 }
 
+/**
+ * The message a Discord reply points at. Discord sends only a stub reference,
+ * so its text and attachments have to be fetched before forwarding.
+ */
+export interface ReplyContext {
+  id: string;
+  authorId: string;
+  authorIsBot: boolean;
+  content: string;
+  attachments: GatewayAttachment[];
+}
+
 export interface MessagePayload {
   mentioned: boolean;
   replyToBotMessageId?: string;
+  replyTo?: ReplyContext;
   id: string;
   channelId: string;
   guildId: string;
@@ -71,23 +84,33 @@ export function messageAttachments(message: Pick<GatewayMessage, "attachments">)
   return attachments;
 }
 
-export async function resolveBotReply(message: Message, botId: string): Promise<string | undefined> {
+/**
+ * Fetches the replied-to message so its text and attachments reach the agent.
+ * References outside this channel are skipped because a stub can point at a
+ * message the bot was never meant to read.
+ */
+export async function resolveReply(message: Message, botId: string): Promise<ReplyContext | undefined> {
   if (!message.reference?.messageId) return undefined;
 
   const referenced = await message.fetchReference().catch(() => null);
-  if (referenced?.author.id === botId && referenced.channelId === message.channelId) {
-    return referenced.id;
-  }
+  if (!referenced || referenced.channelId !== message.channelId) return undefined;
 
-  return undefined;
+  return {
+    id: referenced.id,
+    authorId: referenced.author.id,
+    authorIsBot: referenced.author.id === botId,
+    content: (referenced.content ?? "").trim().slice(0, 4000),
+    attachments: messageAttachments(referenced),
+  };
 }
 
 export function messagePayload(
   message: GatewayMessage,
   botId: string,
-  replyToBotMessageId?: string,
+  replyTo?: ReplyContext,
 ): MessagePayload | null {
   if (!isHumanMessage(message) || !message.guildId) return null;
+  const replyToBotMessageId = replyTo?.authorIsBot ? replyTo.id : undefined;
 
   const mention = `<@${botId}>`;
   const nickMention = `<@!${botId}>`;
@@ -109,6 +132,7 @@ export function messagePayload(
     mentioned,
     isThread,
     replyToBotMessageId,
+    ...(replyTo ? { replyTo } : {}),
     content,
     attachments,
   };

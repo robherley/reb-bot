@@ -9,6 +9,13 @@ const attachmentSchema = z.object({
   mediaType: z.string().min(1).max(255),
   filename: z.string().min(1).max(255),
 });
+const replySchema = z.object({
+  id: snowflake,
+  authorId: snowflake,
+  authorIsBot: z.boolean().default(false),
+  content: z.string().trim().max(4000).default(""),
+  attachments: z.array(attachmentSchema).max(10).default([]),
+});
 const messageSchema = z.object({
   id: snowflake,
   channelId: snowflake,
@@ -18,6 +25,8 @@ const messageSchema = z.object({
   isThread: z.boolean(),
   mentioned: z.boolean().default(true),
   replyToBotMessageId: snowflake.optional(),
+  /** Replied-to message text and attachments, so replies keep their context. */
+  replyTo: replySchema.optional(),
   content: z.string().trim().max(4000).default(""),
   attachments: z.array(attachmentSchema).max(10).default([]),
 }).refine((message) => Boolean(message.content) || message.attachments.length > 0, {
@@ -27,19 +36,37 @@ const messageSchema = z.object({
 /**
  * Text plus one file part per attachment. The channel's `fetchFile` downloads
  * Discord's signed CDN URLs into the session sandbox, where images reach the
- * model as bytes and other files reach it as a readable path.
+ * model as bytes and other files reach it as a readable path. A reply's own
+ * text and attachments are sent first so the model can see what was answered.
  */
 export function messageContent(message: z.infer<typeof messageSchema>): MessageContent {
-  if (message.attachments.length === 0) return message.content;
-  return [
+  const parts = [
+    ...(message.replyTo ? [{ type: "text" as const, text: replyDescription(message.replyTo) }] : []),
+    ...fileParts(message.replyTo?.attachments ?? []),
     ...(message.content ? [{ type: "text" as const, text: message.content }] : []),
-    ...message.attachments.map((attachment) => ({
-      type: "file" as const,
-      data: new URL(attachment.url),
-      mediaType: attachment.mediaType,
-      filename: attachment.filename,
-    })),
+    ...fileParts(message.attachments),
   ];
+  if (parts.length === 0) return message.content;
+  if (parts.length === 1 && parts[0]?.type === "text") return parts[0].text;
+  return parts;
+}
+
+function replyDescription(reply: z.infer<typeof replySchema>): string {
+  const author = reply.authorIsBot ? "the bot" : `<@${reply.authorId}>`;
+  const body = reply.content || "(no text)";
+  const files = reply.attachments.length > 0
+    ? `\nThe replied-to message also has ${reply.attachments.length} attachment(s), listed after this text.`
+    : "";
+  return `Replying to a message from ${author} (message ${reply.id}):\n${body}${files}`;
+}
+
+function fileParts(attachments: z.infer<typeof attachmentSchema>[]) {
+  return attachments.map((attachment) => ({
+    type: "file" as const,
+    data: new URL(attachment.url),
+    mediaType: attachment.mediaType,
+    filename: attachment.filename,
+  }));
 }
 
 function digest(value: string) {

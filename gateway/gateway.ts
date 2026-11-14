@@ -1,7 +1,7 @@
 import { Client, Events, GatewayIntentBits, type Message } from "discord.js";
 import type { GatewayConfig } from "./config.ts";
 import { forwardMessage } from "./forward.ts";
-import { isHumanMessage, messagePayload, resolveBotReply } from "./messages.ts";
+import { isHumanMessage, messagePayload, resolveReply } from "./messages.ts";
 
 const SHUTDOWN_TIMEOUT_MS = 25_000;
 
@@ -18,8 +18,8 @@ export async function startGateway(config: GatewayConfig): Promise<void> {
   let stopping = false;
 
   async function handleMessage(message: Message, botId: string): Promise<void> {
-    const replyId = await resolveBotReply(message, botId);
-    const payload = messagePayload(message, botId, replyId);
+    const replyTo = await resolveReply(message, botId);
+    const payload = messagePayload(message, botId, replyTo);
     if (!payload) return;
 
     await forwardMessage(payload, {
