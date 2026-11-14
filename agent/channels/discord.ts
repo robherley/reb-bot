@@ -4,7 +4,8 @@ import { call } from "eve/events";
 import { InteractionType } from "discord-interactions";
 import { discordGatewayRoute } from "../lib/discord-gateway.js";
 import interactions from "../../bot/interactions.js";
-import { bindCodingThread, type CodingThreadState } from "../lib/coding-thread.js";
+import { bindCodingThread } from "../lib/coding-thread.js";
+import { replyBody, replyToMessageId, type ReplyState } from "../lib/reply.js";
 
 type VisualizationState = DiscordChannelState & { visualizationTurnId?: string };
 
@@ -33,19 +34,19 @@ const discord = discordChannel({
         }));
       }
     },
-    async "content.completed"(event, { channel }) {
+    async "content.completed"(event, { channel, session }) {
       if (event.data.kind !== "text" || event.data.phase !== "reply"
         || typeof event.data.value !== "string" || !event.data.value) return;
       const visualizationTurnId = (channel.state as VisualizationState).visualizationTurnId;
       if (visualizationTurnId && visualizationTurnId === event.scope?.turnId) return;
       // Eve now splits long messages and persists continuation aliases inside post().
-      const replyTo = (channel.state as CodingThreadState).codingReplyMessageId;
-      const message = replyTo ? {
-        content: event.data.value,
-        allowed_mentions: { parse: [], replied_user: false },
-        message_reference: { message_id: replyTo, fail_if_not_exists: false },
-      } : event.data.value;
-      await channel.discord.post(message);
+      // Interaction follow-ups can't carry a message reference, so only Gateway
+      // conversations reply to the message that triggered this turn.
+      const replyTo = replyToMessageId(
+        channel.state as ReplyState,
+        channel.discord.interactionToken ? null : session.auth.current,
+      );
+      await channel.discord.post(replyBody(event.data.value, replyTo));
     },
   },
 });
