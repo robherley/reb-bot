@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { SessionAuthContext } from "eve/context";
-import { replyBody, replyToMessageId, type ReplyState } from "../agent/lib/reply.js";
+import { replyBody, replyToMessageId, SUPPRESS_EMBEDS, type ReplyState } from "../agent/lib/reply.js";
 
 const state: ReplyState = {
   audience: "unknown",
@@ -67,10 +67,20 @@ test("coding threads keep replying to their plan message", () => {
 });
 
 test("reply bodies reference without pinging", () => {
-  assert.equal(replyBody("hello", undefined), "hello");
+  assert.deepEqual(replyBody("hello", undefined), {
+    content: "hello",
+    flags: SUPPRESS_EMBEDS,
+  });
   assert.deepEqual(replyBody("hello", "100000000000000009"), {
     content: "hello",
+    flags: SUPPRESS_EMBEDS,
     allowed_mentions: { parse: [], replied_user: false },
     message_reference: { message_id: "100000000000000009", fail_if_not_exists: false },
   });
+});
+
+test("reply bodies suppress link embeds", () => {
+  assert.equal(SUPPRESS_EMBEDS, 4);
+  assert.equal(replyBody("see https://example.com", undefined).flags, 4);
+  assert.equal(replyBody("see https://example.com", "100000000000000009").flags, 4);
 });
