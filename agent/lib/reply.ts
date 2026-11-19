@@ -3,6 +3,20 @@ import type { DiscordChannelState } from "eve/channels/discord";
 
 const SNOWFLAKE = /^\d+$/;
 
+/**
+ * Discord's `SUPPRESS_EMBEDS` message flag (`1 << 2`). Without it Discord expands
+ * every link in a reply into an embed, so answers pile up card previews below the text.
+ */
+export const SUPPRESS_EMBEDS = 1 << 2;
+
+/** Discord message body for a reply: no link previews, and no pings either. */
+export interface ReplyMessage {
+  content: string;
+  flags: number;
+  allowed_mentions?: { parse: []; replied_user: false };
+  message_reference?: { message_id: string; fail_if_not_exists: false };
+}
+
 /** Channel state plus the reply anchor a coding thread binds to its first plan message. */
 export type ReplyState = DiscordChannelState & { codingReplyMessageId?: string };
 
@@ -35,18 +49,15 @@ export function replyToMessageId(
   return messageId;
 }
 
-/** Reply content that references `replyTo` without pinging anyone. */
-export function replyBody(
-  content: string,
-  replyTo: string | undefined,
-): string | {
-  content: string;
-  allowed_mentions: { parse: []; replied_user: false };
-  message_reference: { message_id: string; fail_if_not_exists: false };
-} {
-  if (!replyTo) return content;
+/**
+ * Reply content that suppresses link embeds and references `replyTo` without pinging
+ * anyone. Always returns a body object, because the embed flag lives on the message.
+ */
+export function replyBody(content: string, replyTo: string | undefined): ReplyMessage {
+  if (!replyTo) return { content, flags: SUPPRESS_EMBEDS };
   return {
     content,
+    flags: SUPPRESS_EMBEDS,
     allowed_mentions: { parse: [], replied_user: false },
     message_reference: { message_id: replyTo, fail_if_not_exists: false },
   };
