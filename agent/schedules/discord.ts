@@ -5,7 +5,7 @@ import { scheduleDestination, scheduledTaskMessage } from "../lib/schedule.js";
 
 export default defineDynamicSchedules({
   description:
-    "Manage recurring or one-time tasks that run in this Discord channel. The schedule posts into the channel it was created in, runs as the person who created it, and needs no one present to run. Timing is a cron expression with an IANA timezone, a single local date and time, or a delay in minutes.",
+    "Manage recurring or one-time tasks that run in this Discord channel. The schedule posts into the channel it was created in, runs as the person who created it, and needs no one present to run. Timing is a cron expression with an IANA timezone, a single local date and time, or a delay in minutes. For a task that should only speak up when something happens, say so in the task text and tell the run to call no_reply when nothing did.",
   inputSchema: z
     .object({
       task: z.string().min(1).max(2000),
