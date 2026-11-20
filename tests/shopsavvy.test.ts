@@ -15,3 +15,18 @@ test("ShopSavvy hides the tools that need a ShopSavvy API key", () => {
   }
   assert.equal(shopsavvy.tools?.allow, undefined);
 });
+
+test("ShopSavvy guidance tells the model to verify live prices before quoting", () => {
+  const description = shopsavvy.description ?? "";
+  assert.match(description, /cached snapshot/i);
+  assert.match(description, /verify the live price/i);
+  assert.match(description, /stale/i);
+});
+
+test("standing ShopSavvy instructions call out staleness and mismatched links", async () => {
+  const { default: instructions } = await import("../agent/instructions/shopsavvy.js");
+  const content = JSON.stringify(instructions);
+  assert.match(content, /last-checked date/i);
+  assert.match(content, /cached snapshot/i);
+  assert.match(content, /refurbished/i);
+});
