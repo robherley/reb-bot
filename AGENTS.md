@@ -16,5 +16,6 @@ regression tests for bug fixes and authorization changes. Execute untrusted code
 only in the remote sandbox. Never commit environment files or credentials.
 
 For self-improvement, branch from latest `origin/main` using `reb/<description>`,
-open a draft PR, and include verification results. Continue the existing branch
-when addressing review feedback. Do not merge or push directly to main.
+open a PR ready for review (a draft only when the requester asks for one), and
+include verification results. Continue the existing branch when addressing
+review feedback. Do not merge or push directly to main.
